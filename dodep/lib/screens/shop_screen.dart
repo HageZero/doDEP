@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../providers/balance_provider.dart';
+import '../providers/style_provider.dart';
+
+class ShopScreen extends StatelessWidget {
+  const ShopScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final balanceProvider = Provider.of<BalanceProvider>(context);
+    final styleProvider = Provider.of<StyleProvider>(context);
+    final availableStyles = styleProvider.allSlotStyles.where((style) => style.price != null).toList(); // Только те стили, у которых есть цена
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.background,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Магазин',
+                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onBackground,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/images/emerald.png',
+                          height: 24,
+                          width: 24,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${balanceProvider.balance}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, // 2 элемента в ряду
+                    crossAxisSpacing: 16, // Расстояние по горизонтали
+                    mainAxisSpacing: 16, // Расстояние по вертикали
+                    childAspectRatio: 0.8, // Соотношение сторон элементов (можно настроить)
+                  ),
+                  itemCount: availableStyles.length,
+                  itemBuilder: (context, index) {
+                    final style = availableStyles[index];
+                    final isBought = styleProvider.isStyleBought(style.id);
+
+                    return Card(
+                      elevation: 4,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: InkWell(
+                        onTap: () {
+                          if (!isBought) {
+                            // Логика покупки
+                            if (balanceProvider.balance >= style.price!) {
+                              balanceProvider.updateBalance(-(style.price!));
+                              styleProvider.buyStyle(style);
+                              // Показать сообщение об успешной покупке
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Стиль ${style.name} куплен!'),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                            } else {
+                              // Показать сообщение о недостаточном балансе
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('Недостаточно изумрудов для покупки стиля ${style.name}'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        splashColor: Colors.transparent,
+                        highlightColor: Colors.transparent,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Image.asset(
+                                style.imageAsset,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              style.name,
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            if (isBought) // Если куплено
+                              Text(
+                                'Куплено',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                              ) else // Если не куплено, показываем цену
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/emerald.png',
+                                    height: 16,
+                                    width: 16,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${style.price}',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.secondary,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            const SizedBox(height: 8),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+} 
