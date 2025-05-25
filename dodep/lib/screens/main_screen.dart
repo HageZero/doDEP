@@ -20,6 +20,7 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   int _selectedIndex = 1;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  late PageController _pageController;
 
   late final List<Widget> _screens;
 
@@ -33,6 +34,8 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
       const SettingsScreen(),
     ];
 
+    _pageController = PageController(initialPage: _selectedIndex);
+    
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -47,13 +50,23 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   @override
   void dispose() {
     _animationController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
   void _onItemTapped(int index) {
+    if (index == _selectedIndex) return;
+    
     setState(() {
       _selectedIndex = index;
     });
+    
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+    
     _animationController.forward(from: 0.0);
   }
 
@@ -61,9 +74,15 @@ class _MainScreenState extends State<MainScreen> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _screens[_selectedIndex],
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: _screens,
+        onPageChanged: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
       ),
       bottomNavigationBar: CustomBottomNav(
         selectedIndex: _selectedIndex,

@@ -260,8 +260,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
      if (_balanceProvider.balance < 50 && !_isSpinning && !_showAddBalanceNotification && !_winAnimationController.isAnimating) {
        Future.delayed(const Duration(seconds: 3), () {
          if (mounted && _balanceProvider.balance < 50) {
-           setState(() {
-             _showAddBalanceNotification = true;
+       setState(() {
+         _showAddBalanceNotification = true;
              _isNotificationVisible = true;
            });
          }
@@ -272,8 +272,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         });
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
-            setState(() {
-              _showAddBalanceNotification = false;
+        setState(() {
+          _showAddBalanceNotification = false;
             });
           }
         });
@@ -322,33 +322,33 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     
     if (_currentSymbols[0] == _currentSymbols[1] && _currentSymbols[1] == _currentSymbols[2]) {
       int winAmount = _currentBet * 2;
-      await balanceProvider.addBalance(winAmount);
-      setState(() {
+        await balanceProvider.addBalance(winAmount);
+        setState(() {
         _winMessage = 'ДЖЕКПОТ $winAmount!';
-        _showWinMessage = true;
-        _isBigWin = true;
-      });
-      _winAnimationController.forward(from: 0.0);
+          _showWinMessage = true;
+          _isBigWin = true;
+        });
+        _winAnimationController.forward(from: 0.0);
       _rotationAnimationController.repeat(reverse: true);
       _confettiController.play();
-      Future.delayed(const Duration(seconds: 5), () {
-        if (mounted) {
-          setState(() {
-            _showWinMessage = false;
+        Future.delayed(const Duration(seconds: 5), () {
+          if (mounted) {
+            setState(() {
+              _showWinMessage = false;
             _rotationAnimationController.stop();
-          });
-        }
-      });
+            });
+          }
+        });
     } else if (_currentSymbols[0] == _currentSymbols[1] || 
                _currentSymbols[1] == _currentSymbols[2] || 
                _currentSymbols[0] == _currentSymbols[2]) {
       int winAmount = _currentBet;
-      await balanceProvider.addBalance(winAmount);
-      setState(() {
-        _winMessage = 'Вы выиграли $winAmount!';
-        _showWinMessage = true;
-        _isBigWin = false;
-      });
+        await balanceProvider.addBalance(winAmount);
+        setState(() {
+          _winMessage = 'Вы выиграли $winAmount!';
+          _showWinMessage = true;
+          _isBigWin = false;
+        });
     } else {
       _isBigWin = false;
     }
@@ -531,25 +531,25 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                          blurRadius: 16,
-                          spreadRadius: 4,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                  blurRadius: 16,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
                           'додепался ты',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                         const SizedBox(height: 10),
                         Text(
                           'и что ты теперь будешь делать?',
@@ -566,25 +566,25 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ],
-                        const SizedBox(height: 20),
-                        ElevatedButton(
+                const SizedBox(height: 20),
+                ElevatedButton(
                           onPressed: _canDodep() ? _handleDodep : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            )
-                          ),
-                          child: Text(
-                            'ДОДЕП',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold
-                            ),
-                          ),
-                        ),
-                      ],
+                  style: ElevatedButton.styleFrom(
+                     backgroundColor: Theme.of(context).colorScheme.primary,
+                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(16),
+                     )
+                  ),
+                  child: Text(
+                    'ДОДЕП',
+                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                       fontWeight: FontWeight.bold
+                     ),
+                  ),
+                ),
+              ],
                     ),
                   ),
                 ),
@@ -605,50 +605,50 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             scale: _isBigWin ? _pulseAnimation.value : 1.0,
             child: Transform.rotate(
               angle: _isBigWin ? _rotationAnimation.value : 0.0,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  border: Border.all(
+         child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            border: Border.all(
                     color: _isBigWin 
                       ? Theme.of(context).colorScheme.primary.withOpacity(0.8)
                       : Theme.of(context).colorScheme.primary,
                     width: _isBigWin ? 3.0 : 2.0,
-                  ),
-                  borderRadius: BorderRadius.circular(12.0),
-                  boxShadow: [
-                    BoxShadow(
+            ),
+            borderRadius: BorderRadius.circular(12.0),
+            boxShadow: [
+              BoxShadow(
                       color: _isBigWin
                         ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
                         : Theme.of(context).colorScheme.primary.withOpacity(0.3),
                       blurRadius: _isBigWin ? 12 : 8,
                       spreadRadius: _isBigWin ? 4 : 2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10.0),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
                           _isBigWin
                             ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
                             : Theme.of(context).colorScheme.surface,
                           _isBigWin
                             ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                             : Theme.of(context).colorScheme.surface.withOpacity(0.8),
-                        ],
-                      ),
-                    ),
-                    child: _currentSymbols[index].startsWith('assets/')
-                        ? Image.asset(_currentSymbols[index], height: 60, width: 60, fit: BoxFit.contain)
-                        : Center(child: Text(_currentSymbols[index], style: TextStyle(fontSize: 40))),
-                  ),
+                  ],
                 ),
               ),
+              child: _currentSymbols[index].startsWith('assets/')
+                  ? Image.asset(_currentSymbols[index], height: 60, width: 60, fit: BoxFit.contain)
+                  : Center(child: Text(_currentSymbols[index], style: TextStyle(fontSize: 40))),
+            ),
+          ),
+        ),
             ),
           );
         },
@@ -738,37 +738,37 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(20.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                              blurRadius: 4,
-                              spreadRadius: 1,
-                            ),
-                          ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(20.0),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          blurRadius: 4,
+                          spreadRadius: 1,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Image.asset(
-                              'assets/images/emerald.png',
-                              height: 24,
-                              width: 24,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${balanceProvider.balance}',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Image.asset(
+                          'assets/images/emerald.png',
+                          height: 24,
+                          width: 24,
                         ),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${balanceProvider.balance}',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
                       ),
                       if (_dodepTimerText.isNotEmpty) ...[
                         const SizedBox(height: 4),
