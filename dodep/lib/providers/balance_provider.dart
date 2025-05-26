@@ -11,6 +11,10 @@ class BalanceProvider with ChangeNotifier {
 
   int get balance => _balance;
 
+  Future<void> initialize() async {
+    await _loadBalance();
+  }
+
   Future<void> _loadBalance() async {
     final prefs = await SharedPreferences.getInstance();
     _balance = prefs.getInt(_balanceKey) ?? 3000;

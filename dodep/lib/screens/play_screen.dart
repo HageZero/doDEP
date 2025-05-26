@@ -770,7 +770,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       ],
                     ),
                       ),
-                      if (_dodepTimerText.isNotEmpty) ...[
+                      if (_dodepTimerText.isNotEmpty && _dodepCount > 0) ...[
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),

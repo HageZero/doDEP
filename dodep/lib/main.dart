@@ -4,9 +4,10 @@ import 'providers/theme_provider.dart';
 import 'providers/balance_provider.dart';
 import 'providers/style_provider.dart';
 import 'theme/app_theme.dart';
-import 'screens/main_screen.dart';
+import 'screens/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     MultiProvider(
       providers: [
@@ -31,7 +32,7 @@ class MyApp extends StatelessWidget {
           theme: AppTheme.lightTheme,
           darkTheme: AppTheme.darkTheme,
           themeMode: themeProvider.themeMode,
-          home: const MainScreen(),
+          home: const SplashScreen(),
         );
       },
     );

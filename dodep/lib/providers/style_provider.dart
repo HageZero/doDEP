@@ -41,6 +41,10 @@ class StyleProvider extends ChangeNotifier {
   List<String> get boughtStyleIds => _boughtStyleIds;
   String get selectedStyleId => _selectedStyleId;
 
+  Future<void> initialize() async {
+    await _loadStyles();
+  }
+
   // Загрузка купленных стилей из SharedPreferences
   Future<void> _loadStyles() async {
     _prefs = await SharedPreferences.getInstance();
