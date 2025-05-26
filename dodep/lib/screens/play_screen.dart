@@ -10,6 +10,7 @@ import 'package:confetti/confetti.dart'; // Импортируем пакет co
 import 'package:flutter/rendering.dart';
 import 'dart:ui'; // Добавляем импорт для ImageFilter
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({Key? key}) : super(key: key);
@@ -31,6 +32,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     'assets/images/hkslot.png', // HK Slot
     'assets/images/primogem.png', // Примогем
     'assets/images/rbface.png', // RB Face
+    'assets/images/tango.png', // Tango
+    'assets/images/mango.png', // Mango
   ];
 
   // Текущие символы на барабанах
@@ -78,6 +81,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   static const String _dodepCountKey = 'dodep_count';
 
   int _currentBet = 50; // Добавляем поле для текущей ставки
+
+  late AudioPlayer _audioPlayer;
+  bool _showSadHorse = false;
 
   @override
   void didChangeDependencies() {
@@ -181,6 +187,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     });
 
     _startDodepTimer();
+
+    _audioPlayer = AudioPlayer();
+    _audioPlayer.setVolume(10.0);
+    _audioPlayer.setReleaseMode(ReleaseMode.stop);
   }
 
   Future<void> _loadDodepState() async {
@@ -287,8 +297,55 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     return _dodepCount < 3 || difference.inMinutes >= 3;
   }
 
+  void _showSadHorseAnimation() async {
+    if (!mounted) return;
+    
+    final overlay = Overlay.of(context);
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Material(
+        color: Colors.transparent,
+        child: TweenAnimationBuilder<double>(
+          duration: const Duration(milliseconds: 2500),
+          curve: Curves.easeInOut,
+          tween: Tween(begin: 0.0, end: 1.0),
+          builder: (context, value, child) {
+            return Container(
+              color: Colors.black.withOpacity(0.5 * value),
+              child: Center(
+                child: Transform.scale(
+                  scale: 0.3 + (0.7 * value),
+                  child: Image.asset(
+                    'assets/images/sadhorse.gif',
+                    width: 200,
+                    height: 200,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+    
+    try {
+      await _audioPlayer.stop(); // Останавливаем предыдущее воспроизведение
+      await _audioPlayer.setVolume(2.0);
+      await _audioPlayer.play(AssetSource('sounds/sfx.m4a'), volume: 10.0);
+    } catch (e) {
+      print('Ошибка воспроизведения звука: $e');
+    }
+    
+    await Future.delayed(const Duration(seconds: 4));
+    
+    overlayEntry.remove();
+  }
+
   void _handleDodep() {
     if (!_canDodep()) {
+      _showSadHorseAnimation();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Додеп будет доступен через ${_dodepTimerText.split('(')[1].split(')')[0]}'),
@@ -430,6 +487,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
         return Dialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
@@ -444,22 +503,52 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Выберите ставку',
+                      'Управление ставкой',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        'Текущая ставка: $_currentBet',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
                 const SizedBox(height: 20),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildBetButton(50),
-                    _buildBetButton(100),
-                    _buildBetButton(300),
-                    _buildBetButton(500),
-                    _buildBetButton(1000),
+                        _buildBetButton(1000, setState),
+                        _buildBetButton(500, setState),
+                        _buildBetButton(300, setState),
+                        _buildBetButton(100, setState),
+                        _buildBetButton(50, setState),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    const Divider(),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        _buildBetButton(-50, setState),
+                        _buildBetButton(-100, setState),
+                        _buildBetButton(-300, setState),
+                        _buildBetButton(-500, setState),
+                        _buildBetButton(-1000, setState),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -475,25 +564,29 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
               ],
             ),
           ),
+            );
+          }
         );
       },
     );
   }
 
-  Widget _buildBetButton(int amount) {
-    final isSelected = amount == _currentBet;
-    final color = Theme.of(context).colorScheme.primary;
+  Widget _buildBetButton(int amount, StateSetter setDialogState) {
+    final isPositive = amount > 0;
+    final color = isPositive 
+        ? Theme.of(context).colorScheme.primary 
+        : Theme.of(context).colorScheme.error;
     
     return ElevatedButton(
       onPressed: () {
-        setState(() {
-          _currentBet = amount;
+        setDialogState(() {
+          _currentBet = (_currentBet + amount).clamp(50, 1000);
         });
-        Navigator.of(context).pop();
+        setState(() {}); // Обновляем состояние основного виджета
       },
       style: ElevatedButton.styleFrom(
-        backgroundColor: isSelected ? color : color.withOpacity(0.1),
-        foregroundColor: isSelected ? Theme.of(context).colorScheme.onPrimary : color,
+        backgroundColor: color.withOpacity(0.1),
+        foregroundColor: color,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -501,7 +594,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         ),
       ),
       child: Text(
-        '+$amount',
+        '${amount > 0 ? '+' : ''}$amount',
         style: TextStyle(
           fontWeight: FontWeight.bold,
           fontSize: 16,
@@ -531,25 +624,25 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                  blurRadius: 16,
-                  spreadRadius: 4,
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                          blurRadius: 16,
+                          spreadRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
                           'додепался ты',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         Text(
                           'и что ты теперь будешь делать?',
@@ -566,25 +659,31 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         ],
-                const SizedBox(height: 20),
-                ElevatedButton(
-                          onPressed: _canDodep() ? _handleDodep : null,
-                  style: ElevatedButton.styleFrom(
-                     backgroundColor: Theme.of(context).colorScheme.primary,
-                     foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                     shape: RoundedRectangleBorder(
-                       borderRadius: BorderRadius.circular(16),
-                     )
-                  ),
-                  child: Text(
-                    'ДОДЕП',
-                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                       fontWeight: FontWeight.bold
-                     ),
-                  ),
-                ),
-              ],
+                        const SizedBox(height: 20),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (!_canDodep()) {
+                              _showSadHorseAnimation();
+                            } else {
+                              _handleDodep();
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            )
+                          ),
+                          child: Text(
+                            'ДОДЕП',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -654,7 +753,34 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         },
       );
     } else {
-      return AnimatedBuilder(
+      return Stack(
+        children: [
+          // Статичный фон
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              border: Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2.0,
+              ),
+              borderRadius: BorderRadius.circular(12.0),
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+          ),
+          // Анимированный контент
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10.0),
+            child: SizedBox(
+              width: 80,
+              height: 80,
+              child: AnimatedBuilder(
         animation: _spinAnimationController,
         builder: (context, child) {
           double value = _reelAnimations[index].value;
@@ -672,13 +798,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                 child: Container(
                   height: 80,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
-                      width: 1.0,
-                    ),
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
                   child: _reelSymbols[index][symbolIndex].startsWith('assets/')
                       ? Image.asset(_reelSymbols[index][symbolIndex], height: 60, width: 60, fit: BoxFit.contain)
                       : Text(_reelSymbols[index][symbolIndex], style: TextStyle(fontSize: 40)),
@@ -686,29 +805,12 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
               ));
             }
           }
-          return Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).colorScheme.primary,
-                width: 2.0,
+                  return Stack(children: stackChildren);
+                },
               ),
-              borderRadius: BorderRadius.circular(12.0),
-              boxShadow: [
-                BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 2,
-                ),
-              ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10.0),
-              child: Stack(children: stackChildren),
-            ),
-          );
-        },
+          ),
+        ],
       );
     }
   }
@@ -717,222 +819,229 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final balanceProvider = Provider.of<BalanceProvider>(context);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Казик',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onBackground,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(20.0),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
+    return Material(
+      child: Stack(
+        children: [
+          Scaffold(
+            backgroundColor: Theme.of(context).colorScheme.background,
+            body: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Image.asset(
-                          'assets/images/emerald.png',
-                          height: 24,
-                          width: 24,
-                        ),
-                        const SizedBox(width: 6),
                         Text(
-                          '${balanceProvider.balance}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          'Казик',
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onBackground,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                      ],
-                    ),
-                      ),
-                      if (_dodepTimerText.isNotEmpty && _dodepCount > 0) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(20.0),
-                          ),
-                          child: Text(
-                            _dodepTimerText,
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onTertiaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Expanded(
-                child: Stack(
-                  children: [
-                    // Виджет конфетти, расположенный сверху
-                    Align(
-                      alignment: Alignment.topCenter,
-                      child: ConfettiWidget(
-                        confettiController: _confettiController,
-                        blastDirectionality: BlastDirectionality.explosive,
-                        shouldLoop: false,
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.secondary,
-                          Theme.of(context).colorScheme.tertiary,
-                          Colors.red, Colors.green, Colors.blue, Colors.yellow,
-                        ],
-                        emissionFrequency: 0.05,
-                        numberOfParticles: 50,
-                        gravity: 0.1,
-                        minimumSize: const Size(10,10),
-                        maximumSize: const Size(20,20),
-                      ),
-                    ),
-
-                    Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_showWinMessage)
-                            AnimatedOpacity(
-                              duration: const Duration(milliseconds: 500),
-                              opacity: _showWinMessage ? 1.0 : 0.0,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      spreadRadius: 2,
-                                    ),
-                                  ],
-                                ),
-                                child: Text(
-                                  _winMessage ?? '',
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(20.0),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                    blurRadius: 4,
+                                    spreadRadius: 1,
                                   ),
-                                ),
+                                ],
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Image.asset(
+                                    'assets/images/emerald.png',
+                                    height: 24,
+                                    width: 24,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${balanceProvider.balance}',
+                                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
+                            if (_dodepTimerText.isNotEmpty && _dodepCount > 0) ...[
+                              const SizedBox(height: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.secondaryContainer,
+                                  color: Theme.of(context).colorScheme.tertiaryContainer,
                                   borderRadius: BorderRadius.circular(20.0),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                                      blurRadius: 4,
-                                      spreadRadius: 1,
-                                    ),
-                                  ],
                                 ),
                                 child: Text(
-                                  'Ставка: $_currentBet',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                  _dodepTimerText,
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onTertiaryContainer,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
                               ),
                             ],
-                          ),
-                          const SizedBox(height: 10),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(3, (index) => Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: _buildReel(index),
-                            )),
-                          ),
-                          const SizedBox(height: 30),
-                          ElevatedButton(
-                            onPressed: _isSpinning || _winAnimationController.isAnimating ? null : _spinReels,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: Text(
-                              _isSpinning ? 'Крутится...' : 'Крутить! (${_currentBet})',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton(
-                            onPressed: balanceProvider.balance > 0 ? _showDepositDialog : null,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              elevation: 4,
-                              backgroundColor: balanceProvider.balance > 0 
-                                  ? Theme.of(context).colorScheme.primaryContainer
-                                  : Theme.of(context).colorScheme.surfaceVariant,
-                            ),
-                            child: Text(
-                              'Депнуть',
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: balanceProvider.balance > 0 
-                                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                                    : Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
-                     if (_showAddBalanceNotification) // Показываем уведомление, если нужно
-                       _buildAddBalanceNotification(context),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-        ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_showWinMessage)
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 500),
+                    opacity: _showWinMessage ? 1.0 : 0.0,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        _winMessage ?? '',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.secondaryContainer,
+                        borderRadius: BorderRadius.circular(20.0),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        'Ставка: $_currentBet',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSecondaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (index) => Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: _buildReel(index),
+                  )),
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: _isSpinning || _winAnimationController.isAnimating ? null : _spinReels,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 4,
+                  ),
+                  child: Text(
+                    _isSpinning ? 'Крутится...' : 'Крутить! (${_currentBet})',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: balanceProvider.balance > 0 ? _showDepositDialog : null,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 4,
+                    backgroundColor: balanceProvider.balance > 0 
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Theme.of(context).colorScheme.surfaceVariant,
+                  ),
+                  child: Text(
+                    'Депнуть',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: balanceProvider.balance > 0 
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_showAddBalanceNotification)
+            _buildAddBalanceNotification(context),
+          if (_showSadHorse)
+            _buildSadHorseAnimation(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSadHorseAnimation() {
+    return Material(
+      color: Colors.transparent,
+      child: TweenAnimationBuilder<double>(
+        duration: const Duration(milliseconds: 2500),
+        curve: Curves.easeInOut,
+        tween: Tween(begin: 0.0, end: _showSadHorse ? 1.0 : 0.0),
+        builder: (context, value, child) {
+          return Container(
+            color: Colors.black.withOpacity(0.5 * value),
+            child: Center(
+              child: Transform.scale(
+                scale: 0.3 + (0.7 * value),
+                child: Image.asset(
+                  'assets/images/sadhorse.gif',
+                  width: 200,
+                  height: 200,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -947,6 +1056,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _confettiController.dispose();
     _balanceProvider.removeListener(_checkBalanceForNotification);
     _saveDodepState();
+    _audioPlayer.dispose();
     super.dispose();
   }
 } 

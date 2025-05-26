@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../providers/theme_provider.dart';
+import '../providers/language_provider.dart';
+import 'dart:ui';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({Key? key}) : super(key: key);
@@ -10,28 +12,25 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProviderStateMixin {
-  // Функция для открытия URL
-  Future<void> _launchUrl(String url) async {
-    final uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      await launchUrl(uri, mode: LaunchMode.platformDefault);
-    }
-  }
-
+class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
+    
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _scaleAnimation = CurvedAnimation(parent: _animationController, curve: Curves.easeInOut);
+    
+    _scaleAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    );
 
-    _animationController.forward(); // Запускаем анимацию при появлении экрана
+    _animationController.forward();
   }
 
   @override
@@ -40,9 +39,23 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
     super.dispose();
   }
 
+  void _handleLanguageToggle(bool value) {
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    languageProvider.toggleLanguage();
+  }
+
+  // Функция для открытия URL
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -86,7 +99,30 @@ class _SettingsScreenState extends State<SettingsScreen> with SingleTickerProvid
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16), // Отступ между карточками
+                    const SizedBox(height: 16),
+                    // Переключатель языка
+                    Card(
+                      elevation: 2,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.language,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(
+                          'Английский язык',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                             color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        trailing: Switch(
+                          value: Provider.of<LanguageProvider>(context).isEnglish,
+                          onChanged: _handleLanguageToggle,
+                          activeColor: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     // Здесь может быть другое содержимое настроек
                   ],
                 ),

@@ -61,14 +61,12 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       ),
     );
 
-    // Создаем контроллеры для точек
     _dotControllers = List.generate(3, (index) {
       final controller = AnimationController(
         duration: const Duration(milliseconds: 600),
         vsync: this,
       );
 
-      // Запускаем анимацию с задержкой для каждой точки
       Future.delayed(Duration(milliseconds: index * 200), () {
         if (mounted) {
           controller.repeat(reverse: true);
@@ -78,7 +76,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       return controller;
     });
 
-    // Создаем анимации для точек
     _dotAnimations = _dotControllers.map((controller) {
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
@@ -88,7 +85,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       );
     }).toList();
 
-    // Создаем анимированные фигуры
     _shapeControllers = List.generate(5, (index) {
       final controller = AnimationController(
         duration: Duration(seconds: 3 + index),
@@ -98,7 +94,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       return controller;
     });
 
-    // Инициализируем фигуры
     _shapes.addAll([
       ShapeData(
         type: ShapeType.circle,
@@ -182,7 +177,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               height: 8,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.white.withOpacity(0.3 + (_dotAnimations[index].value * 0.7)),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3 + (_dotAnimations[index].value * 0.7)),
               ),
             );
           },
@@ -192,6 +187,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Widget _buildShape(ShapeData shape, AnimationController controller) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+    
     return AnimatedBuilder(
       animation: controller,
       builder: (context, child) {
@@ -216,7 +214,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     width: shape.size,
                     height: shape.size,
                     decoration: BoxDecoration(
-                      color: shape.color,
+                      color: isDark 
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                          : Theme.of(context).colorScheme.primary.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
@@ -231,6 +231,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDark = themeProvider.isDarkMode;
+
     return Scaffold(
       body: Stack(
         children: [
@@ -240,10 +243,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFF6A1B9A), // Глубокий фиолетовый
-                  const Color(0xFF4A148C), // Тёмный фиолетовый
-                  const Color(0xFF7B1FA2), // Яркий фиолетовый
+                colors: isDark ? [
+                  Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.6),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                ] : [
+                  Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                  Theme.of(context).colorScheme.primary.withOpacity(0.25),
                 ],
                 stops: const [0.0, 0.5, 1.0],
               ),
@@ -290,15 +297,21 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.15),
+                                color: isDark 
+                                    ? Colors.white.withOpacity(0.15)
+                                    : Colors.white.withOpacity(0.25),
                                 borderRadius: BorderRadius.circular(30),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: isDark 
+                                      ? Colors.white.withOpacity(0.2)
+                                      : Colors.white.withOpacity(0.3),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: isDark 
+                                        ? Colors.black.withOpacity(0.2)
+                                        : Colors.black.withOpacity(0.1),
                                     blurRadius: 10,
                                     spreadRadius: 2,
                                   ),
@@ -310,13 +323,17 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                   Text(
                                     'Депаем шекели...',
                                     style: TextStyle(
-                                      color: Colors.white.withOpacity(0.9),
+                                      color: isDark 
+                                          ? Colors.white.withOpacity(0.9)
+                                          : Theme.of(context).colorScheme.primary.withOpacity(0.9),
                                       fontSize: 24,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
                                       shadows: [
                                         Shadow(
-                                          color: Colors.black.withOpacity(0.3),
+                                          color: isDark 
+                                              ? Colors.black.withOpacity(0.3)
+                                              : Colors.white.withOpacity(0.3),
                                           offset: const Offset(0, 2),
                                           blurRadius: 4,
                                         ),
