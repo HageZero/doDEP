@@ -38,29 +38,29 @@ class CustomBottomNav extends StatelessWidget {
               children: [
                 _buildNavItem(
                   context,
-                  Icons.storefront_outlined,
-                  Icons.storefront_rounded,
+                  'assets/images/shop_icon.png',
+                  'assets/images/shop_icon.png',
                   0,
                   isDark,
                 ),
                 _buildNavItem(
                   context,
-                  Icons.casino_outlined,
-                  Icons.casino,
+                  'assets/images/slots_icon.png',
+                  'assets/images/slots_icon.png',
                   1,
                   isDark,
                 ),
                 _buildNavItem(
                   context,
-                  Icons.color_lens_outlined,
-                  Icons.color_lens,
+                  'assets/images/style_icon.png',
+                  'assets/images/style_icon.png',
                   2,
                   isDark,
                 ),
                 _buildNavItem(
                   context,
-                  Icons.settings_outlined,
-                  Icons.settings,
+                  'assets/images/settings_icon.png',
+                  'assets/images/settings_icon.png',
                   3,
                   isDark,
                 ),
@@ -74,8 +74,8 @@ class CustomBottomNav extends StatelessWidget {
 
   Widget _buildNavItem(
     BuildContext context,
-    IconData outlinedIcon,
-    IconData filledIcon,
+    String outlinedIcon,
+    String filledIcon,
     int index,
     bool isDark,
   ) {
@@ -153,19 +153,21 @@ class CustomBottomNav extends StatelessWidget {
                           end: Alignment.bottomRight,
                           colors: iconGradientColors,
                         ).createShader(bounds),
-                        child: Icon(
+                        child: Image.asset(
                           filledIcon,
+                          width: 28,
+                          height: 28,
                           color: Colors.white,
-                          size: 28,
                         ),
                       )
-                    : Icon(
+                    : Image.asset(
                         key: ValueKey<int>(index),
                         outlinedIcon,
+                        width: 28,
+                        height: 28,
                         color: isDark
                             ? Colors.grey[400]
                             : Colors.grey[600],
-                        size: 28,
                       ),
               ),
               if (isSelected)

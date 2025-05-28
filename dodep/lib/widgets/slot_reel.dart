@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import '../models/slot_symbol.dart';
 
 class SlotReel extends StatelessWidget {
-  final String imageUrl; // URL изображения символа для отображения
-  final double size; // Размер барабана/символа
+  final SlotSymbol symbol;
+  final double size;
 
   const SlotReel({
     Key? key,
-    required this.imageUrl,
-    this.size = 100.0, // Размер по умолчанию
+    required this.symbol,
+    this.size = 100.0,
   }) : super(key: key);
 
   @override
@@ -16,25 +17,23 @@ class SlotReel extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey, width: 2.0), // Пример границы
-        borderRadius: BorderRadius.circular(8.0), // Пример закругления углов
+        border: Border.all(color: Colors.grey, width: 2.0),
+        borderRadius: BorderRadius.circular(8.0),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(6.0), // Закругление углов изображения
-        child: imageUrl.startsWith('assets/') // Проверяем, является ли imageUrl путем к изображению
-            ? Image.asset(
-                imageUrl,
-                fit: BoxFit.cover, // Растягиваем изображение на весь контейнер
+        borderRadius: BorderRadius.circular(6.0),
+        child: Image.asset(
+          symbol.imagePath,
+          fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
-                  // Обработка ошибок загрузки изображения
-                  return Center(child: Icon(Icons.error));
-                },
-              )
-            : Center(
-                child: Text(
-                  imageUrl, // Отображаем эмодзи
-                  style: TextStyle(fontSize: size * 0.6), // Размер эмодзи
-                ),
+            return Center(
+              child: Icon(
+                Icons.error,
+                color: Colors.red,
+                size: size * 0.3,
+              ),
+            );
+          },
               ),
       ),
     );

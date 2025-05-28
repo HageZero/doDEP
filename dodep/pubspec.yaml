@@ -68,9 +68,19 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
+    - assets/images/classic/
+    - assets/images/doka3/
+    - assets/images/dresnya/
+    - assets/images/fantasy/
+    - assets/images/hellokitty/
+    - assets/images/japan/
+    - assets/images/lego/
+    - assets/images/minecraft/
+    - assets/images/tokyopuk/
     - assets/icons/
     - assets/sounds/
     - assets/images/sadhorse.gif
+    - assets/images/dodep.jpg
     - assets/sounds/sfx.m4a
     - assets/videos/english.mp4
 

@@ -20,16 +20,17 @@ class StyleProvider extends ChangeNotifier {
   
   // Список всех доступных стилей слотов
   final List<SlotStyle> _allSlotStyles = const [
-    SlotStyle(id: 'slotstyle1', name: 'Фентези-Гача', imageAsset: 'assets/images/slotstyle1.png'), // Начальный стиль
+    SlotStyle(id: 'classic', name: 'Классика', imageAsset: 'assets/images/logo.png'), // Классический стиль
+    SlotStyle(id: 'fantasy_gacha', name: 'Фэнтези-гача', imageAsset: 'assets/images/slotstyle1.png', price: 3000),
     SlotStyle(id: 'slotstyle2', name: 'Дресня', imageAsset: 'assets/images/slotstyle2.png', price: 1000),
-    SlotStyle(id: 'slotstyle3', name: 'Токийский пук', imageAsset: 'assets/images/slotstyle3.png', price: 1500),
-    SlotStyle(id: 'slotstyle4', name: 'Лего', imageAsset: 'assets/images/slotstyle4.png', price: 2000),
-    SlotStyle(id: 'slotstyle5', name: 'Майнкрафт', imageAsset: 'assets/images/slotstyle5.png', price: 2500),
-    SlotStyle(id: 'slotstyle6', name: 'Дока 3', imageAsset: 'assets/images/slotstyle6.png', price: 3000),
+    SlotStyle(id: 'slotstyle3', name: 'Токийский пук', imageAsset: 'assets/images/slotstyle3.png', price: 4500),
+    SlotStyle(id: 'slotstyle4', name: 'Лего', imageAsset: 'assets/images/slotstyle4.png', price: 6000),
+    SlotStyle(id: 'slotstyle5', name: 'Майнкрафт', imageAsset: 'assets/images/minecraft.jpg', price: 3800),
+    SlotStyle(id: 'slotstyle6', name: 'Дока 3', imageAsset: 'assets/images/slotstyle6.png', price: 7000),
   ];
 
-  List<String> _boughtStyleIds = ['slotstyle1']; // Список ID купленных стилей, по умолчанию есть 'slotstyle1'
-  String _selectedStyleId = 'slotstyle1'; // ID текущего выбранного стиля
+  List<String> _boughtStyleIds = ['classic']; // Список ID купленных стилей, по умолчанию есть 'classic'
+  String _selectedStyleId = 'classic'; // ID текущего выбранного стиля
   SharedPreferences? _prefs;
 
   StyleProvider() {
@@ -54,7 +55,7 @@ class StyleProvider extends ChangeNotifier {
     }
     // Проверяем, если выбранный стиль больше не куплен (хотя по логике такого быть не должно), сбрасываем на дефолтный
     if (!_boughtStyleIds.contains(_selectedStyleId)) {
-      _selectedStyleId = 'slotstyle1';
+      _selectedStyleId = 'classic';
     }
     notifyListeners();
   }

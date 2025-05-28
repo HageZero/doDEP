@@ -78,6 +78,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _videoController.initialize().then((_) {
       if (mounted) {
         setState(() {});
+        _videoController.setVolume(5.0);
       }
     });
 
