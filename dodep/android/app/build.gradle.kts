@@ -3,6 +3,7 @@ plugins {
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -17,6 +18,7 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        freeCompilerArgs = listOf("-Xskip-metadata-version-check")
     }
 
     sourceSets {
@@ -30,7 +32,7 @@ android {
         applicationId = "com.example.dodep"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 21
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
@@ -43,6 +45,11 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    // Добавляем настройки для решения проблем с кэшем
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 flutter {
@@ -51,4 +58,5 @@ flutter {
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.0")
+    implementation(platform("com.google.firebase:firebase-bom:33.14.0"))
 }

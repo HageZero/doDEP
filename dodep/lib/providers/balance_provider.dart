@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 class BalanceProvider with ChangeNotifier {
   int _balance = 3000; // Начальный баланс
-  static const String _balanceKey = 'balance';
+  static const String _balanceKeyPrefix = 'balance_';
+  final AuthService _authService = AuthService();
 
   BalanceProvider() {
     _loadBalance();
@@ -11,19 +13,24 @@ class BalanceProvider with ChangeNotifier {
 
   int get balance => _balance;
 
+  String get _currentBalanceKey {
+    final currentUser = _authService.getCurrentUserSync();
+    return '${_balanceKeyPrefix}${currentUser?.username ?? 'guest'}';
+  }
+
   Future<void> initialize() async {
     await _loadBalance();
   }
 
   Future<void> _loadBalance() async {
     final prefs = await SharedPreferences.getInstance();
-    _balance = prefs.getInt(_balanceKey) ?? 3000;
+    _balance = prefs.getInt(_currentBalanceKey) ?? 3000;
     notifyListeners();
   }
 
   Future<void> _saveBalance() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_balanceKey, _balance);
+    await prefs.setInt(_currentBalanceKey, _balance);
   }
 
   Future<void> addBalance(int amount) async {
@@ -53,5 +60,10 @@ class BalanceProvider with ChangeNotifier {
     } else {
       await subtractBalance(-amount);
     }
+  }
+
+  // Метод для обновления баланса при смене пользователя
+  Future<void> updateBalanceForUser() async {
+    await _loadBalance();
   }
 } 

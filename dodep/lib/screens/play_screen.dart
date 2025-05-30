@@ -393,7 +393,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _startFreeSpins() {
     setState(() {
-      _freeSpins = 5;
+      _freeSpins = 10;
       _isFreeSpin = true;
     });
     _startAutoSpin();
@@ -422,7 +422,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       // Проверяем, является ли комбинация тремя бонусами
       if (_currentSymbols[0].name == 'bonus') {
         setState(() {
-          _freeSpins += _isFreeSpin ? 2 : 5;
+          _freeSpins += _isFreeSpin ? 2 : 10;
           _winMessage = _isFreeSpin ? 'Бонус! +2 бесплатные прокрутки' : 'Бонус! 5 бесплатных прокруток';
           _showWinMessage = true;
         });
@@ -506,7 +506,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             _showWinMessage = false;
           });
         }
-      });
+        });
     } else {
       setState(() {
         _isWin = false;
@@ -662,7 +662,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
@@ -865,29 +865,29 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             scale: _isBigWin ? _pulseAnimation.value : 1.0,
             child: Transform.rotate(
               angle: _isBigWin ? _rotationAnimation.value : 0.0,
-              child: Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  border: Border.all(
+         child: Container(
+          width: 80,
+          height: 80,
+          decoration: BoxDecoration(
+            border: Border.all(
                     color: _isBigWin 
                       ? Theme.of(context).colorScheme.primary.withOpacity(0.8)
                       : Theme.of(context).colorScheme.primary,
                     width: _isBigWin ? 3.0 : 2.0,
-                  ),
-                  borderRadius: BorderRadius.circular(12.0),
-                  boxShadow: [
-                    BoxShadow(
+            ),
+            borderRadius: BorderRadius.circular(12.0),
+            boxShadow: [
+              BoxShadow(
                       color: _isBigWin
                         ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
                         : Theme.of(context).colorScheme.primary.withOpacity(0.3),
                       blurRadius: _isBigWin ? 12 : 8,
                       spreadRadius: _isBigWin ? 4 : 2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10.0),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10.0),
                   child: Stack(
                     children: [
                       if (Provider.of<StyleProvider>(context, listen: false).selectedStyleId == 'slotstyle5')
@@ -898,20 +898,20 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                           fit: BoxFit.cover,
                         ),
                       Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              _isBigWin
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                          _isBigWin
+                            ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
                                 : Colors.transparent,
-                              _isBigWin
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                          _isBigWin
+                            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                                 : Colors.transparent,
-                            ],
-                          ),
-                        ),
+                  ],
+                ),
+              ),
                         child: Center(
                           child: _currentSymbols[index].imagePath.isNotEmpty
                               ? Image.asset(_currentSymbols[index].imagePath, height: 60, width: 60, fit: BoxFit.contain)
@@ -919,9 +919,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ),
+            ),
+          ),
+        ),
             ),
           );
         },
@@ -962,32 +962,32 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       fit: BoxFit.cover,
                     ),
                   AnimatedBuilder(
-                    animation: _spinAnimationController,
-                    builder: (context, child) {
-                      double value = _reelAnimations[index].value;
-                      double offset = value;
-                      int firstIndex = offset.floor();
-                      double dy = -(offset - firstIndex) * 80;
-                      List<Widget> stackChildren = [];
-                      for (int i = 0; i < 3; i++) {
-                        int symbolIndex = firstIndex + i;
-                        if (symbolIndex < _reelSymbols[index].length) {
-                          stackChildren.add(Positioned(
-                            top: (i * 80.0) + dy - 80,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 80,
-                              alignment: Alignment.center,
+        animation: _spinAnimationController,
+        builder: (context, child) {
+          double value = _reelAnimations[index].value;
+          double offset = value;
+          int firstIndex = offset.floor();
+          double dy = -(offset - firstIndex) * 80;
+          List<Widget> stackChildren = [];
+          for (int i = 0; i < 3; i++) {
+            int symbolIndex = firstIndex + i;
+            if (symbolIndex < _reelSymbols[index].length) {
+              stackChildren.add(Positioned(
+                top: (i * 80.0) + dy - 80,
+                left: 0,
+                right: 0,
+                child: Container(
+                  height: 80,
+                  alignment: Alignment.center,
                               child: _reelSymbols[index][symbolIndex].imagePath.isNotEmpty
                                   ? Image.asset(_reelSymbols[index][symbolIndex].imagePath, height: 60, width: 60, fit: BoxFit.contain)
                                   : Text(_reelSymbols[index][symbolIndex].name, style: TextStyle(fontSize: 40)),
-                            ),
-                          ));
-                        }
-                      }
-                      return Stack(children: stackChildren);
-                    },
+                ),
+              ));
+            }
+          }
+                  return Stack(children: stackChildren);
+                },
                   ),
                 ],
               ),

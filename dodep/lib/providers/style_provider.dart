@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/auth_service.dart';
 
 class SlotStyle {
   final String id;
@@ -16,7 +17,8 @@ class SlotStyle {
 }
 
 class StyleProvider extends ChangeNotifier {
-  static const String _boughtStylesKey = 'bought_slot_styles';
+  static const String _boughtStylesKeyPrefix = 'bought_slot_styles_';
+  static const String _selectedStyleKeyPrefix = 'selected_style_';
   
   // Список всех доступных стилей слотов
   final List<SlotStyle> _allSlotStyles = const [
@@ -32,6 +34,7 @@ class StyleProvider extends ChangeNotifier {
   List<String> _boughtStyleIds = ['classic']; // Список ID купленных стилей, по умолчанию есть 'classic'
   String _selectedStyleId = 'classic'; // ID текущего выбранного стиля
   SharedPreferences? _prefs;
+  final AuthService _authService = AuthService();
 
   StyleProvider() {
     _loadStyles();
@@ -42,6 +45,16 @@ class StyleProvider extends ChangeNotifier {
   List<String> get boughtStyleIds => _boughtStyleIds;
   String get selectedStyleId => _selectedStyleId;
 
+  String get _currentBoughtStylesKey {
+    final currentUser = _authService.getCurrentUserSync();
+    return '${_boughtStylesKeyPrefix}${currentUser?.username ?? 'guest'}';
+  }
+
+  String get _currentSelectedStyleKey {
+    final currentUser = _authService.getCurrentUserSync();
+    return '${_selectedStyleKeyPrefix}${currentUser?.username ?? 'guest'}';
+  }
+
   Future<void> initialize() async {
     await _loadStyles();
   }
@@ -49,14 +62,21 @@ class StyleProvider extends ChangeNotifier {
   // Загрузка купленных стилей из SharedPreferences
   Future<void> _loadStyles() async {
     _prefs = await SharedPreferences.getInstance();
-    final savedStyles = _prefs!.getStringList(_boughtStylesKey);
+    final savedStyles = _prefs!.getStringList(_currentBoughtStylesKey);
     if (savedStyles != null) {
       _boughtStyleIds = savedStyles;
+    } else {
+      _boughtStyleIds = ['classic']; // Сброс к дефолтному значению для нового пользователя
     }
-    // Проверяем, если выбранный стиль больше не куплен (хотя по логике такого быть не должно), сбрасываем на дефолтный
-    if (!_boughtStyleIds.contains(_selectedStyleId)) {
+    
+    // Загружаем выбранный стиль
+    final savedSelectedStyle = _prefs!.getString(_currentSelectedStyleKey);
+    if (savedSelectedStyle != null && _boughtStyleIds.contains(savedSelectedStyle)) {
+      _selectedStyleId = savedSelectedStyle;
+    } else {
       _selectedStyleId = 'classic';
     }
+    
     notifyListeners();
   }
 
@@ -74,7 +94,7 @@ class StyleProvider extends ChangeNotifier {
     // Здесь должна быть проверка баланса и его списание (это будет в ShopScreen)
     // Если покупка успешна:
     _boughtStyleIds.add(style.id);
-    await _prefs!.setStringList(_boughtStylesKey, _boughtStyleIds);
+    await _prefs!.setStringList(_currentBoughtStylesKey, _boughtStyleIds);
     notifyListeners();
     return true;
   }
@@ -83,8 +103,7 @@ class StyleProvider extends ChangeNotifier {
   Future<void> selectStyle(String styleId) async {
     if (_boughtStyleIds.contains(styleId)) {
       _selectedStyleId = styleId;
-      // Сохранять выбранный стиль не обязательно, но можно добавить если нужно сохранять между сессиями
-      // await _prefs!.setString('selected_slot_style', styleId);
+      await _prefs!.setString(_currentSelectedStyleKey, styleId);
       notifyListeners();
     }
   }
@@ -97,5 +116,10 @@ class StyleProvider extends ChangeNotifier {
   // Проверить, куплен ли стиль
   bool isStyleBought(String styleId) {
     return _boughtStyleIds.contains(styleId);
+  }
+
+  // Метод для обновления стилей при смене пользователя
+  Future<void> updateStylesForUser() async {
+    await _loadStyles();
   }
 } 

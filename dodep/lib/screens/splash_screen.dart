@@ -6,6 +6,8 @@ import '../providers/theme_provider.dart';
 import '../providers/balance_provider.dart';
 import '../providers/style_provider.dart';
 import 'main_screen.dart';
+import 'auth_screen.dart';
+import '../services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -23,6 +25,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   late List<Animation<double>> _dotAnimations;
   late Animation<double> _blurAnimation;
   late List<AnimationController> _shapeControllers;
+  late AnimationController _textAnimationController;
+  late Animation<double> _textScaleAnimation;
+  late Animation<double> _textOpacityAnimation;
+  late Animation<double> _textSlideAnimation;
   final List<ShapeData> _shapes = [];
 
   @override
@@ -60,6 +66,35 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
       ),
     );
+
+    _textAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _textScaleAnimation = Tween<double>(
+      begin: 0.5,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _textAnimationController,
+      curve: Curves.elasticOut,
+    ));
+
+    _textOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _textAnimationController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+    ));
+
+    _textSlideAnimation = Tween<double>(
+      begin: 30.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _textAnimationController,
+      curve: Curves.easeOut,
+    ));
 
     _dotControllers = List.generate(3, (index) {
       final controller = AnimationController(
@@ -133,12 +168,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     ]);
 
     _controller.forward();
+    _textAnimationController.forward();
     _initializeApp();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _textAnimationController.dispose();
     for (var controller in _dotControllers) {
       controller.dispose();
     }
@@ -158,9 +195,16 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const MainScreen()),
-      );
+      final authService = AuthService();
+      final currentUser = await authService.getCurrentUser();
+
+      if (mounted) {
+        if (currentUser != null) {
+          Navigator.pushReplacementNamed(context, '/main');
+        } else {
+          Navigator.pushReplacementNamed(context, '/auth');
+        }
+      }
     }
   }
 
@@ -320,27 +364,41 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    'Депаем шекели...',
-                                    style: TextStyle(
-                                      color: isDark 
-                                          ? Colors.white.withOpacity(0.9)
-                                          : Theme.of(context).colorScheme.primary.withOpacity(0.9),
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w600,
-                                      letterSpacing: 0.5,
-                                      shadows: [
-                                        Shadow(
-                                          color: isDark 
-                                              ? Colors.black.withOpacity(0.3)
-                                              : Colors.white.withOpacity(0.3),
-                                          offset: const Offset(0, 2),
-                                          blurRadius: 4,
+                                  AnimatedBuilder(
+                                    animation: _textAnimationController,
+                                    builder: (context, child) {
+                                      return Transform.translate(
+                                        offset: Offset(0, _textSlideAnimation.value),
+                                        child: Opacity(
+                                          opacity: _textOpacityAnimation.value,
+                                          child: Transform.scale(
+                                            scale: _textScaleAnimation.value,
+                                            child: Text(
+                                              'Депаем шекели...',
+                                              style: TextStyle(
+                                                color: isDark 
+                                                    ? Colors.white.withOpacity(0.9)
+                                                    : Theme.of(context).colorScheme.primary.withOpacity(0.9),
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w600,
+                                                letterSpacing: 0.5,
+                                                shadows: [
+                                                  Shadow(
+                                                    color: isDark 
+                                                        ? Colors.black.withOpacity(0.3)
+                                                        : Colors.white.withOpacity(0.3),
+                                                    offset: const Offset(0, 2),
+                                                    blurRadius: 4,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                         ),
-                                      ],
-                                    ),
+                                      );
+                                    },
                                   ),
-                                  const SizedBox(height: 12),
+                                  const SizedBox(height: 16),
                                   _buildLoadingDots(),
                                 ],
                               ),
