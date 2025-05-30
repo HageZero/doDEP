@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
+import '../providers/style_provider.dart';
+import 'package:provider/provider.dart';
 
 class CustomBottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -15,6 +17,46 @@ class CustomBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final styleProvider = Provider.of<StyleProvider>(context);
+    final currentStyle = styleProvider.getStyleById(styleProvider.selectedStyleId);
+    
+    // Определяем цвета в зависимости от текущего стиля
+    Color primaryColor;
+    Color secondaryColor;
+    
+    switch (currentStyle.id) {
+      case 'fantasy_gacha':
+        primaryColor = isDark ? Colors.deepPurple : Colors.purple;
+        secondaryColor = isDark ? Colors.purple : Colors.pink;
+        break;
+      case 'dresnya':
+        primaryColor = isDark ? Colors.orange : Colors.deepOrange;
+        secondaryColor = isDark ? Colors.deepOrange : Colors.orange;
+        break;
+      case 'tokyopuk':
+        primaryColor = isDark ? Colors.pink : Colors.red;
+        secondaryColor = isDark ? Colors.red : Colors.pink;
+        break;
+      case 'lego':
+        primaryColor = isDark ? Colors.blue : Colors.lightBlue;
+        secondaryColor = isDark ? Colors.lightBlue : Colors.blue;
+        break;
+      case 'minecraft':
+        primaryColor = isDark ? Colors.green : Colors.lightGreen;
+        secondaryColor = isDark ? Colors.lightGreen : Colors.green;
+        break;
+      case 'doka3':
+        primaryColor = isDark ? Colors.teal : Colors.cyan;
+        secondaryColor = isDark ? Colors.cyan : Colors.teal;
+        break;
+      case 'yamete':
+        primaryColor = isDark ? Colors.red : Colors.pink;
+        secondaryColor = isDark ? Colors.pink : Colors.red;
+        break;
+      default: // classic
+        primaryColor = isDark ? Colors.deepPurple : Colors.purple;
+        secondaryColor = isDark ? Colors.purple : Colors.pink;
+    }
     
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -42,6 +84,8 @@ class CustomBottomNav extends StatelessWidget {
                   'assets/images/shop_icon.png',
                   0,
                   isDark,
+                  primaryColor,
+                  secondaryColor,
                 ),
                 _buildNavItem(
                   context,
@@ -49,6 +93,8 @@ class CustomBottomNav extends StatelessWidget {
                   'assets/images/slots_icon.png',
                   1,
                   isDark,
+                  primaryColor,
+                  secondaryColor,
                 ),
                 _buildNavItem(
                   context,
@@ -56,6 +102,8 @@ class CustomBottomNav extends StatelessWidget {
                   'assets/images/style_icon.png',
                   2,
                   isDark,
+                  primaryColor,
+                  secondaryColor,
                 ),
                 _buildNavItem(
                   context,
@@ -63,6 +111,8 @@ class CustomBottomNav extends StatelessWidget {
                   'assets/images/profile_icon.png',
                   3,
                   isDark,
+                  primaryColor,
+                  secondaryColor,
                 ),
               ],
             ),
@@ -78,29 +128,30 @@ class CustomBottomNav extends StatelessWidget {
     String filledIcon,
     int index,
     bool isDark,
+    Color primaryColor,
+    Color secondaryColor,
   ) {
-    final colorScheme = Theme.of(context).colorScheme;
     final isSelected = selectedIndex == index;
     
-    // Определяем цвета градиента в зависимости от темы
+    // Определяем цвета градиента в зависимости от темы и стиля
     final gradientColors = isDark
         ? [
-            Colors.deepPurple.withOpacity(0.25),
-            Colors.purple.withOpacity(0.25),
+            primaryColor.withOpacity(0.25),
+            secondaryColor.withOpacity(0.25),
           ]
         : [
-            Colors.pink.withOpacity(0.15),
-            Colors.purple.withOpacity(0.15),
+            primaryColor.withOpacity(0.15),
+            secondaryColor.withOpacity(0.15),
           ];
 
     final iconGradientColors = isDark
         ? [
-            Colors.deepPurple,
-            Colors.purple,
+            primaryColor,
+            secondaryColor,
           ]
         : [
-            Colors.pink,
-            Colors.purple,
+            primaryColor,
+            secondaryColor,
           ];
     
     return Material(
@@ -124,8 +175,8 @@ class CustomBottomNav extends StatelessWidget {
             border: isSelected
                 ? Border.all(
                     color: isDark 
-                        ? Colors.purple.withOpacity(0.3)
-                        : Colors.pink.withOpacity(0.3),
+                        ? secondaryColor.withOpacity(0.3)
+                        : primaryColor.withOpacity(0.3),
                     width: 1.5,
                   )
                 : null,
@@ -188,8 +239,8 @@ class CustomBottomNav extends StatelessWidget {
                         shadows: [
                           Shadow(
                             color: isDark
-                                ? Colors.purple.withOpacity(0.4)
-                                : Colors.pink.withOpacity(0.4),
+                                ? secondaryColor.withOpacity(0.4)
+                                : primaryColor.withOpacity(0.4),
                             blurRadius: 6,
                             offset: const Offset(0, 2),
                           ),

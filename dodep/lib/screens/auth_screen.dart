@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../themes/minecraft_theme.dart';
 
@@ -13,9 +14,28 @@ class _AuthScreenState extends State<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
   bool _isLogin = true;
   bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // Проверяем состояние аутентификации при инициализации экрана
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAuthState();
+    });
+  }
+
+  Future<void> _checkAuthState() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final currentUser = authService.getCurrentUserSync();
+    
+    if (currentUser != null && mounted) {
+      debugPrint('Пользователь уже авторизован, переход на главный экран');
+      Navigator.pushReplacementNamed(context, '/main');
+    }
+  }
 
   @override
   void dispose() {
@@ -27,36 +47,45 @@ class _AuthScreenState extends State<AuthScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
+      final authService = Provider.of<AuthService>(context, listen: false);
       bool success;
+      
       if (_isLogin) {
-        success = await _authService.login(
+        debugPrint('Попытка входа для пользователя: ${_usernameController.text}');
+        success = await authService.login(
           _usernameController.text,
           _passwordController.text,
         );
       } else {
-        success = await _authService.register(
+        debugPrint('Попытка регистрации для пользователя: ${_usernameController.text}');
+        success = await authService.register(
           _usernameController.text,
           _passwordController.text,
         );
       }
 
-      if (success) {
-        if (mounted) {
+      if (success && mounted) {
+        debugPrint('Успешная авторизация, переход на главный экран');
           Navigator.pushReplacementNamed(context, '/main');
-        }
-      } else {
+      } else if (mounted) {
+        setState(() {
+          _errorMessage = _isLogin
+              ? 'Неверное имя пользователя или пароль'
+              : 'Пользователь с таким именем уже существует';
+        });
+      }
+    } catch (e) {
+      debugPrint('Ошибка при авторизации: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_isLogin
-                  ? 'Неверное имя пользователя или пароль'
-                  : 'Пользователь с таким именем уже существует'),
-            ),
-          );
-        }
+        setState(() {
+          _errorMessage = 'Произошла ошибка. Попробуйте позже.';
+        });
       }
     } finally {
       if (mounted) {
@@ -81,6 +110,18 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 32),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                        fontSize: 14,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
                 TextFormField(
                   controller: _usernameController,
                   decoration: const InputDecoration(
@@ -113,12 +154,25 @@ class _AuthScreenState extends State<AuthScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
                   onPressed: _isLoading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
                   child: _isLoading
-                      ? const CircularProgressIndicator()
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                            ),
+                          )
                       : Text(_isLogin ? 'Войти' : 'Зарегистрироваться'),
+                  ),
                 ),
+                const SizedBox(height: 16),
                 TextButton(
                   onPressed: _isLoading
                       ? null
@@ -127,6 +181,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             _isLogin = !_isLogin;
                             _usernameController.clear();
                             _passwordController.clear();
+                            _errorMessage = null;
                           });
                         },
                   child: Text(_isLogin

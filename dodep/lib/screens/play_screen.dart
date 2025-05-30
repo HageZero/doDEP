@@ -12,6 +12,7 @@ import 'package:flutter/rendering.dart';
 import 'dart:ui'; // Добавляем импорт для ImageFilter
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
+import '../services/auth_service.dart';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({Key? key}) : super(key: key);
@@ -200,13 +201,33 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
     setState(() {
       switch (selectedStyle) {
-        case 'slotstyle5':
+        case 'minecraft':
           _symbols = SlotSymbols.minecraft;
           break;
+        case 'fantasy_gacha':
+          _symbols = SlotSymbols.fantasyGacha;
+          break;
+        case 'dresnya':
+          _symbols = SlotSymbols.dresnya;
+          break;
+        case 'tokyopuk':
+          _symbols = SlotSymbols.tokyopuk;
+          break;
+        case 'lego':
+          _symbols = SlotSymbols.lego;
+          break;
+        case 'doka3':
+          _symbols = SlotSymbols.doka3;
+          break;
+        case 'yamete':
+          _symbols = SlotSymbols.yamete;
+          break;
+        case 'classic':
         default:
           _symbols = SlotSymbols.classic;
           break;
       }
+      debugPrint('Загружены символы для стиля: $selectedStyle');
     });
   }
 
@@ -423,7 +444,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       if (_currentSymbols[0].name == 'bonus') {
         setState(() {
           _freeSpins += _isFreeSpin ? 2 : 10;
-          _winMessage = _isFreeSpin ? 'Бонус! +2 бесплатные прокрутки' : 'Бонус! 5 бесплатных прокруток';
+          _winMessage = _isFreeSpin ? 'Бонус! +2 бесплатные прокрутки' : 'Бонус! 10 бесплатных прокруток';
           _showWinMessage = true;
         });
         
@@ -456,24 +477,32 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         _winAmount = winAmount;
         _isWin = true;
         _winMessage = 'Джекпот! x$winMultiplier';
-          _showWinMessage = true;
-          _isBigWin = true;
-        });
+        _showWinMessage = true;
+        _isBigWin = true;
+      });
       
-        _winAnimationController.forward(from: 0.0);
+      _winAnimationController.forward(from: 0.0);
       _rotationAnimationController.repeat(reverse: true);
       _confettiController.play();
+      
+      // Обновляем баланс и максимальный выигрыш
+      final authService = Provider.of<AuthService>(context, listen: false);
+      authService.updateMaxWin(winAmount).then((_) {
+        debugPrint('Максимальный выигрыш обновлен: $winAmount');
+      }).catchError((e) {
+        debugPrint('Ошибка при обновлении максимального выигрыша: $e');
+      });
       
       Provider.of<BalanceProvider>(context, listen: false).addBalance(winAmount);
       
       Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() {
-              _showWinMessage = false;
+        if (mounted) {
+          setState(() {
+            _showWinMessage = false;
             _rotationAnimationController.stop();
-            });
-          }
-        });
+          });
+        }
+      });
     } else if (_currentSymbols[0].name == _currentSymbols[1].name || 
                _currentSymbols[1].name == _currentSymbols[2].name || 
                _currentSymbols[0].name == _currentSymbols[2].name) {
@@ -488,15 +517,22 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       }
       
       int winAmount = _currentBet;
-        setState(() {
+      setState(() {
         _winAmount = winAmount;
         _isWin = true;
         _winMessage = 'Выигрыш! x1';
-          _showWinMessage = true;
-          _isBigWin = false;
-        });
+        _showWinMessage = true;
+        _isBigWin = false;
+      });
       
-      // Обновляем баланс
+      // Обновляем баланс и максимальный выигрыш
+      final authService = Provider.of<AuthService>(context, listen: false);
+      authService.updateMaxWin(winAmount).then((_) {
+        debugPrint('Максимальный выигрыш обновлен: $winAmount');
+      }).catchError((e) {
+        debugPrint('Ошибка при обновлении максимального выигрыша: $e');
+      });
+      
       Provider.of<BalanceProvider>(context, listen: false).addBalance(winAmount);
       
       // Скрываем сообщение о выигрыше через 2 секунды
@@ -506,13 +542,13 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             _showWinMessage = false;
           });
         }
-        });
+      });
     } else {
       setState(() {
         _isWin = false;
         _winMessage = '';
         _showWinMessage = false;
-      _isBigWin = false;
+        _isBigWin = false;
       });
     }
 
@@ -529,6 +565,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _spinReels() async {
     final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
     
     if (_isSpinning) return;
     if (!_isFreeSpin && balanceProvider.balance < _currentBet) {
@@ -545,83 +582,112 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _showAddBalanceNotification = false;
     });
 
-    if (!_isFreeSpin) {
-    await balanceProvider.subtractBalance(_currentBet);
+    try {
+      if (!_isFreeSpin) {
+        await balanceProvider.subtractBalance(_currentBet);
+      }
+
+      // Увеличиваем счетчик прокруток в Firebase
+      await authService.incrementSpinsCount();
+
+      double randomValue = _random.nextDouble();
+      List<SlotSymbol> nextSymbols = [];
+
+      // Определяем специальные символы
+      final sevenSymbol = _symbols.firstWhere((s) => s.name == 'seven');
+      final emeraldSymbol = _symbols.firstWhere((s) => s.name == 'emerald');
+      final rubinSymbol = _symbols.firstWhere((s) => s.name == 'rubin');
+      final bonusSymbol = _symbols.firstWhere((s) => s.name == 'bonus');
+
+      if (randomValue < 0.03) { // 3% шанс на три бонуса (было 2%)
+        nextSymbols = [bonusSymbol, bonusSymbol, bonusSymbol];
+      } else if (randomValue < 0.07) { // 4% шанс на три семерки (было 3%)
+        nextSymbols = [sevenSymbol, sevenSymbol, sevenSymbol];
+      } else if (randomValue < 0.12) { // 5% шанс на три изумруда (было 3%)
+        nextSymbols = [emeraldSymbol, emeraldSymbol, emeraldSymbol];
+      } else if (randomValue < 0.20) { // 8% шанс на три рубина (было 5%)
+        nextSymbols = [rubinSymbol, rubinSymbol, rubinSymbol];
+      } else if (randomValue < 0.40) { // 20% шанс на два одинаковых символа (было 15%)
+        // Выбираем случайный символ
+        SlotSymbol symbol1 = _symbols[_random.nextInt(_symbols.length)];
+        // Выбираем другой случайный символ
+        SlotSymbol symbol2;
+        do {
+          symbol2 = _symbols[_random.nextInt(_symbols.length)];
+        } while (symbol2 == symbol1);
+
+        // Создаем комбинацию с двумя одинаковыми символами
+        nextSymbols = [symbol1, symbol1, symbol2];
+        // Перемешиваем позиции
+        nextSymbols.shuffle(_random);
+      } else {
+        // Для остальных случаев используем полностью случайную генерацию
+        List<SlotSymbol> tempSymbols = List.from(_symbols);
+        tempSymbols.shuffle(_random);
+        nextSymbols = tempSymbols.sublist(0, min(3, tempSymbols.length));
+      }
+
+      _currentSymbols = nextSymbols;
+
+      for (int i = 0; i < 3; i++) {
+        List<SlotSymbol> temp = List.generate(_reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]);
+        temp[_centerIndex] = _currentSymbols[i];
+        _reelSymbols[i] = temp;
+      }
+
+      _spinAnimationController.forward(from: 0.0);
+    } catch (e) {
+      debugPrint('Ошибка при вращении барабана: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ошибка при вращении барабана: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+      setState(() {
+        _isSpinning = false;
+      });
     }
-
-    double randomValue = _random.nextDouble();
-    List<SlotSymbol> nextSymbols = [];
-
-    // Определяем специальные символы
-    final sevenSymbol = _symbols.firstWhere((s) => s.name == 'seven');
-    final emeraldSymbol = _symbols.firstWhere((s) => s.name == 'emerald');
-    final rubinSymbol = _symbols.firstWhere((s) => s.name == 'rubin');
-    final bonusSymbol = _symbols.firstWhere((s) => s.name == 'bonus');
-
-    if (randomValue < 0.02) { // 2% шанс на три бонуса
-      nextSymbols = [bonusSymbol, bonusSymbol, bonusSymbol];
-    } else if (randomValue < 0.04) { // 3% шанс на три семерки
-      nextSymbols = [sevenSymbol, sevenSymbol, sevenSymbol];
-    } else if (randomValue < 0.07) { // 3% шанс на три изумруда
-      nextSymbols = [emeraldSymbol, emeraldSymbol, emeraldSymbol];
-    } else if (randomValue < 0.12) { // 5% шанс на три рубина
-      nextSymbols = [rubinSymbol, rubinSymbol, rubinSymbol];
-    } else if (randomValue < 0.27) { // 15% шанс на два одинаковых символа
-      // Выбираем случайный символ
-      SlotSymbol symbol1 = _symbols[_random.nextInt(_symbols.length)];
-      // Выбираем другой случайный символ
-      SlotSymbol symbol2;
-      do {
-        symbol2 = _symbols[_random.nextInt(_symbols.length)];
-      } while (symbol2 == symbol1);
-
-      // Создаем комбинацию с двумя одинаковыми символами
-      nextSymbols = [symbol1, symbol1, symbol2];
-      // Перемешиваем позиции
-      nextSymbols.shuffle(_random);
-    } else {
-      // Для остальных случаев используем полностью случайную генерацию
-      List<SlotSymbol> tempSymbols = List.from(_symbols);
-           tempSymbols.shuffle(_random);
-           nextSymbols = tempSymbols.sublist(0, min(3, tempSymbols.length));
-    }
-
-    _currentSymbols = nextSymbols;
-
-    for (int i = 0; i < 3; i++) {
-      List<SlotSymbol> temp = List.generate(_reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]);
-      temp[_centerIndex] = _currentSymbols[i];
-      _reelSymbols[i] = temp;
-    }
-
-    _spinAnimationController.forward(from: 0.0);
   }
 
   void _showDepositDialog() {
-    showDialog(
+    // Блокируем диалог во время бесплатных прокруток
+    if (_isFreeSpin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Нельзя изменить ставку во время бесплатных прокруток'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
+    }
+
+    showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (context, setState) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                      'Управление ставкой',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  borderRadius: BorderRadius.circular(20),
                 ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Управление ставкой',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     const SizedBox(height: 20),
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -637,7 +703,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                const SizedBox(height: 20),
+                    const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
                         setState(() {
@@ -662,12 +728,12 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ),
-                const SizedBox(height: 20),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  alignment: WrapAlignment.center,
-                  children: [
+                    const SizedBox(height: 20),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.center,
+                      children: [
                         _buildBetButton(1000, setState),
                         _buildBetButton(500, setState),
                         _buildBetButton(300, setState),
@@ -688,23 +754,23 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         _buildBetButton(-300, setState),
                         _buildBetButton(-500, setState),
                         _buildBetButton(-1000, setState),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: Text(
+                        'Отмена',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    'Отмена',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+              ),
             );
-          }
+          },
         );
       },
     );
@@ -742,7 +808,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     );
   }
 
-  // Виджет уведомления о низком балансе
   Widget _buildAddBalanceNotification(BuildContext context) {
     return Positioned.fill(
       child: AnimatedOpacity(
@@ -865,29 +930,29 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             scale: _isBigWin ? _pulseAnimation.value : 1.0,
             child: Transform.rotate(
               angle: _isBigWin ? _rotationAnimation.value : 0.0,
-         child: Container(
-          width: 80,
-          height: 80,
-          decoration: BoxDecoration(
-            border: Border.all(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  border: Border.all(
                     color: _isBigWin 
                       ? Theme.of(context).colorScheme.primary.withOpacity(0.8)
                       : Theme.of(context).colorScheme.primary,
                     width: _isBigWin ? 3.0 : 2.0,
-            ),
-            borderRadius: BorderRadius.circular(12.0),
-            boxShadow: [
-              BoxShadow(
+                  ),
+                  borderRadius: BorderRadius.circular(12.0),
+                  boxShadow: [
+                    BoxShadow(
                       color: _isBigWin
                         ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
                         : Theme.of(context).colorScheme.primary.withOpacity(0.3),
                       blurRadius: _isBigWin ? 12 : 8,
                       spreadRadius: _isBigWin ? 4 : 2,
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(10.0),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10.0),
                   child: Stack(
                     children: [
                       if (Provider.of<StyleProvider>(context, listen: false).selectedStyleId == 'slotstyle5')
@@ -898,20 +963,20 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                           fit: BoxFit.cover,
                         ),
                       Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                          _isBigWin
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              _isBigWin
+                                ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
                                 : Colors.transparent,
-                          _isBigWin
-                            ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
+                              _isBigWin
+                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
                                 : Colors.transparent,
-                  ],
-                ),
-              ),
+                            ],
+                          ),
+                        ),
                         child: Center(
                           child: _currentSymbols[index].imagePath.isNotEmpty
                               ? Image.asset(_currentSymbols[index].imagePath, height: 60, width: 60, fit: BoxFit.contain)
@@ -919,9 +984,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                       ),
                     ],
-            ),
-          ),
-        ),
+                  ),
+                ),
+              ),
             ),
           );
         },
@@ -962,32 +1027,32 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       fit: BoxFit.cover,
                     ),
                   AnimatedBuilder(
-        animation: _spinAnimationController,
-        builder: (context, child) {
-          double value = _reelAnimations[index].value;
-          double offset = value;
-          int firstIndex = offset.floor();
-          double dy = -(offset - firstIndex) * 80;
-          List<Widget> stackChildren = [];
-          for (int i = 0; i < 3; i++) {
-            int symbolIndex = firstIndex + i;
-            if (symbolIndex < _reelSymbols[index].length) {
-              stackChildren.add(Positioned(
-                top: (i * 80.0) + dy - 80,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 80,
-                  alignment: Alignment.center,
+                    animation: _spinAnimationController,
+                    builder: (context, child) {
+                      double value = _reelAnimations[index].value;
+                      double offset = value;
+                      int firstIndex = offset.floor();
+                      double dy = -(offset - firstIndex) * 80;
+                      List<Widget> stackChildren = [];
+                      for (int i = 0; i < 3; i++) {
+                        int symbolIndex = firstIndex + i;
+                        if (symbolIndex < _reelSymbols[index].length) {
+                          stackChildren.add(Positioned(
+                            top: (i * 80.0) + dy - 80,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              height: 80,
+                              alignment: Alignment.center,
                               child: _reelSymbols[index][symbolIndex].imagePath.isNotEmpty
                                   ? Image.asset(_reelSymbols[index][symbolIndex].imagePath, height: 60, width: 60, fit: BoxFit.contain)
                                   : Text(_reelSymbols[index][symbolIndex].name, style: TextStyle(fontSize: 40)),
-                ),
-              ));
-            }
-          }
-                  return Stack(children: stackChildren);
-                },
+                            ),
+                          ));
+                        }
+                      }
+                      return Stack(children: stackChildren);
+                    },
                   ),
                 ],
               ),
@@ -1192,24 +1257,26 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: balanceProvider.balance > 0 ? _showDepositDialog : null,
+                  onPressed: (_isFreeSpin || balanceProvider.balance <= 0) 
+                      ? null 
+                      : _showDepositDialog,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
                     elevation: 4,
-                    backgroundColor: balanceProvider.balance > 0 
-                        ? Theme.of(context).colorScheme.primaryContainer
-                        : Theme.of(context).colorScheme.surfaceVariant,
+                    backgroundColor: (_isFreeSpin || balanceProvider.balance <= 0)
+                        ? Theme.of(context).colorScheme.surfaceVariant
+                        : Theme.of(context).colorScheme.primaryContainer,
                   ),
                   child: Text(
                     'Депнуть',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
-                      color: balanceProvider.balance > 0 
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: (_isFreeSpin || balanceProvider.balance <= 0)
+                          ? Theme.of(context).colorScheme.onSurfaceVariant
+                          : Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),

@@ -137,12 +137,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
     
-    // Добавляем эффект для воспроизведения видео при его появлении
-    if (languageProvider.showVideo && _videoController.value.isInitialized && !_videoController.value.isPlaying) {
-      _videoController.play();
-      _textAnimationController.forward(from: 0.0);
-    }
-    
+    // Удаляем обработку видео, так как оно теперь показывается в SettingsScreen
     return Stack(
       children: [
         Scaffold(
@@ -181,74 +176,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                 child: IgnorePointer(
                   child: Container(
                     color: Colors.transparent,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
-        // Затемнение фона при показе видео
-        if (languageProvider.showVideo)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withOpacity(0.5),
-            ),
-          ),
-
-        // Текст поверх всего
-        if (languageProvider.showMessage)
-          Positioned.fill(
-            child: AnimatedBuilder(
-              animation: _textAnimationController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _textOpacityAnimation.value,
-                  child: Transform.scale(
-                    scale: _textScaleAnimation.value,
-                    child: Center(
-                      child: Text(
-                        'чума suck my balls',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              color: Theme.of(context).colorScheme.primary,
-                              blurRadius: 10,
-                              offset: const Offset(2, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-
-        // Видео поверх всего
-        if (languageProvider.showVideo && _videoController.value.isInitialized)
-          Positioned.fill(
-            child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Container(
-                  width: MediaQuery.of(context).size.width * 0.8,
-                  height: MediaQuery.of(context).size.width * 0.8,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: AspectRatio(
-                    aspectRatio: 1,
-                    child: VideoPlayer(_videoController),
                   ),
                 ),
               ),

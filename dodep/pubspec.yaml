@@ -36,9 +36,18 @@ dependencies:
   collection: ^1.18.0
   audioplayers: ^5.2.1
   video_player: ^2.7.2
-  image_picker: ^1.0.7
+  image_picker: ^1.1.2
   url_launcher: ^6.2.2
   permission_handler: ^11.3.0
+  firebase_database: ^11.3.6
+  firebase_core: ^3.13.1
+  firebase_auth: ^5.5.4
+  image_cropper: ^9.1.0
+  firebase_storage: ^12.4.6
+  http: ^1.4.0
+  cloudinary_public: ^0.23.1
+  crypto: ^3.0.6
+  lottie: ^3.3.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -92,12 +101,15 @@ flutter:
     - assets/images/shop_icon.png
     - assets/images/slots_icon.png
     - assets/images/emerald.png
-    - assets/images/slotstyle1.png
+    - assets/images/fantasystyle.png
     - assets/images/slotstyle2.png
-    - assets/images/slotstyle3.png
-    - assets/images/slotstyle4.png
-    - assets/images/slotstyle5.png
-    - assets/images/slotstyle6.png
+    - assets/images/tokyopukstyle.png
+    - assets/images/doka3style.png
+    - assets/images/japanstyle.png
+    - assets/images/legostyle.png
+    - assets/images/minecraftstyle.png
+    - assets/loading.json
+    - assets/successful_anim.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

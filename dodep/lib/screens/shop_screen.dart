@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/balance_provider.dart';
 import '../providers/style_provider.dart';
+import '../widgets/success_animation.dart';
 
-class ShopScreen extends StatelessWidget {
+class ShopScreen extends StatefulWidget {
   const ShopScreen({Key? key}) : super(key: key);
+
+  @override
+  State<ShopScreen> createState() => _ShopScreenState();
+}
+
+class _ShopScreenState extends State<ShopScreen> {
+  bool _showSuccessAnimation = false;
 
   @override
   Widget build(BuildContext context) {
@@ -14,7 +22,9 @@ class ShopScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -75,27 +85,43 @@ class ShopScreen extends StatelessWidget {
                       elevation: 4,
                       color: Theme.of(context).colorScheme.surface,
                       child: InkWell(
-                        onTap: () {
+                            onTap: () async {
                           if (!isBought) {
-                            // Логика покупки
                             if (balanceProvider.balance >= style.price!) {
+                                  final success = await styleProvider.buyStyle(style);
+                                  if (success) {
                               balanceProvider.updateBalance(-(style.price!));
-                              styleProvider.buyStyle(style);
-                              // Показать сообщение об успешной покупке
+                                    setState(() {
+                                      _showSuccessAnimation = true;
+                                    });
+                                    
+                                    // Скрываем анимацию через 2 секунды
+                                    Future.delayed(const Duration(seconds: 2), () {
+                                      if (mounted) {
+                                        setState(() {
+                                          _showSuccessAnimation = false;
+                                        });
+                                      }
+                                    });
+
+                                    if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Стиль ${style.name} куплен!'),
-                                  backgroundColor: Colors.green,
+                                          backgroundColor: Theme.of(context).colorScheme.primary,
                                 ),
                               );
+                                    }
+                                  }
                             } else {
-                              // Показать сообщение о недостаточном балансе
+                                  if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   content: Text('Недостаточно изумрудов для покупки стиля ${style.name}'),
-                                  backgroundColor: Colors.red,
+                                        backgroundColor: Theme.of(context).colorScheme.error,
                                 ),
                               );
+                                  }
                             }
                           }
                         },
@@ -183,6 +209,23 @@ class ShopScreen extends StatelessWidget {
             ],
           ),
         ),
+          ),
+          // Анимация успеха
+          if (_showSuccessAnimation)
+            Container(
+              color: Colors.black.withOpacity(0.5),
+              child: SuccessAnimation(
+                size: 150,
+                onComplete: () {
+                  if (mounted) {
+                    setState(() {
+                      _showSuccessAnimation = false;
+                    });
+                  }
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'dart:math' as math;
+import 'package:lottie/lottie.dart';
 import '../providers/theme_provider.dart';
 import '../providers/balance_provider.dart';
 import '../providers/style_provider.dart';
@@ -186,24 +187,41 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   Future<void> _initializeApp() async {
+    try {
+      debugPrint('Начало инициализации приложения');
+      
+      // Инициализируем AuthService первым
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.initAuthState();
+      
+      // Затем инициализируем остальные провайдеры
     await Future.wait([
       Provider.of<ThemeProvider>(context, listen: false).initialize(),
       Provider.of<BalanceProvider>(context, listen: false).initialize(),
       Provider.of<StyleProvider>(context, listen: false).initialize(),
     ]);
 
+      // Добавляем небольшую задержку для анимации
     await Future.delayed(const Duration(seconds: 2));
 
     if (mounted) {
-      final authService = AuthService();
-      final currentUser = await authService.getCurrentUser();
+        final currentUser = authService.getCurrentUserSync();
+        debugPrint('Проверка состояния пользователя: ${currentUser?.username ?? 'не авторизован'}');
 
       if (mounted) {
         if (currentUser != null) {
+            debugPrint('Переход на главный экран');
           Navigator.pushReplacementNamed(context, '/main');
         } else {
+            debugPrint('Переход на экран авторизации');
           Navigator.pushReplacementNamed(context, '/auth');
+          }
         }
+      }
+    } catch (e) {
+      debugPrint('Ошибка при инициализации приложения: $e');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/auth');
       }
     }
   }
@@ -331,36 +349,6 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                       offset: Offset(0, _slideAnimation.value),
                       child: Opacity(
                         opacity: _fadeAnimation.value,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(30),
-                          child: BackdropFilter(
-                            filter: ImageFilter.blur(
-                              sigmaX: _blurAnimation.value,
-                              sigmaY: _blurAnimation.value,
-                            ),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                              decoration: BoxDecoration(
-                                color: isDark 
-                                    ? Colors.white.withOpacity(0.15)
-                                    : Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(30),
-                                border: Border.all(
-                                  color: isDark 
-                                      ? Colors.white.withOpacity(0.2)
-                                      : Colors.white.withOpacity(0.3),
-                                  width: 1.5,
-                                ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isDark 
-                                        ? Colors.black.withOpacity(0.2)
-                                        : Colors.black.withOpacity(0.1),
-                                    blurRadius: 10,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -379,7 +367,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                                 color: isDark 
                                                     ? Colors.white.withOpacity(0.9)
                                                     : Theme.of(context).colorScheme.primary.withOpacity(0.9),
-                                                fontSize: 24,
+                                          fontSize: 28,
                                                 fontWeight: FontWeight.w600,
                                                 letterSpacing: 0.5,
                                                 shadows: [
@@ -398,12 +386,28 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                       );
                                     },
                                   ),
-                                  const SizedBox(height: 16),
-                                  _buildLoadingDots(),
-                                ],
+                            const SizedBox(height: 24),
+                            ColorFiltered(
+                              colorFilter: ColorFilter.mode(
+                                isDark 
+                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
+                                    : Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                                BlendMode.srcIn,
+                              ),
+                              child: Lottie.asset(
+                                'assets/loading.json',
+                                width: 140,
+                                height: 80,
+                                fit: BoxFit.contain,
+                                repeat: true,
+                                animate: true,
+                                filterQuality: FilterQuality.high,
+                                options: LottieOptions(
+                                  enableMergePaths: true,
                               ),
                             ),
                           ),
+                          ],
                         ),
                       ),
                     ),

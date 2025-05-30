@@ -18,13 +18,13 @@ class SlotSymbols {
       imagePath: 'assets/images/classic/7.png',
       name: 'seven',
       value: 100,
-      specialMultiplier: 2, // x2 за три семерки
+      specialMultiplier: 3, // x3 за три семерки
     ),
     SlotSymbol(
       imagePath: 'assets/images/classic/emerald.png',
       name: 'emerald',
       value: 80,
-      specialMultiplier: 3, // x3 за три изумруда
+      specialMultiplier: 4, // x4 за три изумруда
     ),
     SlotSymbol(
       imagePath: 'assets/images/classic/rubin.png',
@@ -79,13 +79,13 @@ class SlotSymbols {
       imagePath: 'assets/images/minecraft/7.png',
       name: 'seven',
       value: 100,
-      specialMultiplier: 2, // x2 за три семерки
+      specialMultiplier: 3, // x3 за три семерки
     ),
     SlotSymbol(
       imagePath: 'assets/images/minecraft/emerald.png',
       name: 'emerald',
       value: 80,
-      specialMultiplier: 3, // x3 за три изумруда
+      specialMultiplier: 4, // x4 за три изумруда
     ),
     SlotSymbol(
       imagePath: 'assets/images/minecraft/rubin.png',
@@ -162,6 +162,372 @@ class SlotSymbols {
       imagePath: 'assets/images/minecraft/coconut.png',
       name: 'coconut',
       value: 85,
+    ),
+  ];
+
+  static const List<SlotSymbol> fantasyGacha = [
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/7.png',
+      name: 'seven',
+      value: 100,
+      specialMultiplier: 3,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/emerald.png',
+      name: 'emerald',
+      value: 80,
+      specialMultiplier: 4,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/rubin.png',
+      name: 'rubin',
+      value: 60,
+      specialMultiplier: 2,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/bonus.png',
+      name: 'bonus',
+      value: 50,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/clover.png',
+      name: 'clover',
+      value: 40,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/watermelon.png',
+      name: 'watermelon',
+      value: 30,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/plome.png',
+      name: 'plome',
+      value: 25,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/cherry.png',
+      name: 'cherry',
+      value: 20,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/lemon.png',
+      name: 'lemon',
+      value: 15,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/grape.png',
+      name: 'grape',
+      value: 10,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/fantasy/banana.png',
+      name: 'banana',
+      value: 5,
+    ),
+  ];
+
+  static const List<SlotSymbol> dresnya = [
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/7.png',
+      name: 'seven',
+      value: 100,
+      specialMultiplier: 3,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/emerald.png',
+      name: 'emerald',
+      value: 80,
+      specialMultiplier: 4,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/rubin.png',
+      name: 'rubin',
+      value: 60,
+      specialMultiplier: 2,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/bonus.png',
+      name: 'bonus',
+      value: 50,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/clover.png',
+      name: 'clover',
+      value: 40,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/watermelon.png',
+      name: 'watermelon',
+      value: 30,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/plome.png',
+      name: 'plome',
+      value: 25,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/cherry.png',
+      name: 'cherry',
+      value: 20,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/lemon.png',
+      name: 'lemon',
+      value: 15,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/grape.png',
+      name: 'grape',
+      value: 10,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/dresnya/banana.png',
+      name: 'banana',
+      value: 5,
+    ),
+  ];
+
+  static const List<SlotSymbol> tokyopuk = [
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/7.png',
+      name: 'seven',
+      value: 100,
+      specialMultiplier: 3,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/emerald.png',
+      name: 'emerald',
+      value: 80,
+      specialMultiplier: 4,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/rubin.png',
+      name: 'rubin',
+      value: 60,
+      specialMultiplier: 2,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/bonus.png',
+      name: 'bonus',
+      value: 50,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/clover.png',
+      name: 'clover',
+      value: 40,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/watermelon.png',
+      name: 'watermelon',
+      value: 30,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/plome.png',
+      name: 'plome',
+      value: 25,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/cherry.png',
+      name: 'cherry',
+      value: 20,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/lemon.png',
+      name: 'lemon',
+      value: 15,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/grape.png',
+      name: 'grape',
+      value: 10,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/tokyopuk/banana.png',
+      name: 'banana',
+      value: 5,
+    ),
+  ];
+
+  static const List<SlotSymbol> lego = [
+    SlotSymbol(
+      imagePath: 'assets/images/lego/7.png',
+      name: 'seven',
+      value: 100,
+      specialMultiplier: 3,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/emerald.png',
+      name: 'emerald',
+      value: 80,
+      specialMultiplier: 4,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/rubin.png',
+      name: 'rubin',
+      value: 60,
+      specialMultiplier: 2,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/bonus.png',
+      name: 'bonus',
+      value: 50,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/clover.png',
+      name: 'clover',
+      value: 40,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/watermelon.png',
+      name: 'watermelon',
+      value: 30,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/plome.png',
+      name: 'plome',
+      value: 25,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/cherry.png',
+      name: 'cherry',
+      value: 20,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/lemon.png',
+      name: 'lemon',
+      value: 15,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/grape.png',
+      name: 'grape',
+      value: 10,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/lego/banana.png',
+      name: 'banana',
+      value: 5,
+    ),
+  ];
+
+  static const List<SlotSymbol> doka3 = [
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/7.png',
+      name: 'seven',
+      value: 100,
+      specialMultiplier: 3,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/emerald.png',
+      name: 'emerald',
+      value: 80,
+      specialMultiplier: 4,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/rubin.png',
+      name: 'rubin',
+      value: 60,
+      specialMultiplier: 2,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/bonus.png',
+      name: 'bonus',
+      value: 50,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/clover.png',
+      name: 'clover',
+      value: 40,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/watermelon.png',
+      name: 'watermelon',
+      value: 30,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/plome.png',
+      name: 'plome',
+      value: 25,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/cherry.png',
+      name: 'cherry',
+      value: 20,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/lemon.png',
+      name: 'lemon',
+      value: 15,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/grape.png',
+      name: 'grape',
+      value: 10,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/doka3/banana.png',
+      name: 'banana',
+      value: 5,
+    ),
+  ];
+
+  static const List<SlotSymbol> yamete = [
+    SlotSymbol(
+      imagePath: 'assets/images/japan/7.png',
+      name: 'seven',
+      value: 100,
+      specialMultiplier: 3,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/emerald.png',
+      name: 'emerald',
+      value: 80,
+      specialMultiplier: 4,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/rubin.png',
+      name: 'rubin',
+      value: 60,
+      specialMultiplier: 2,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/bonus.png',
+      name: 'bonus',
+      value: 50,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/clover.png',
+      name: 'clover',
+      value: 40,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/watermelon.png',
+      name: 'watermelon',
+      value: 30,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/plome.png',
+      name: 'plome',
+      value: 25,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/cherry.png',
+      name: 'cherry',
+      value: 20,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/lemon.png',
+      name: 'lemon',
+      value: 15,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/grape.png',
+      name: 'grape',
+      value: 10,
+    ),
+    SlotSymbol(
+      imagePath: 'assets/images/japan/banana.png',
+      name: 'banana',
+      value: 5,
     ),
   ];
 } 
