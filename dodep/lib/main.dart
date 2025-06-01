@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'providers/theme_provider.dart';
 import 'providers/balance_provider.dart';
 import 'providers/style_provider.dart';
@@ -16,13 +17,55 @@ import 'screens/auth_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/auth_service.dart';
 import 'utils/global_keys.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Инициализация Hive
+  final appDocDir = await getApplicationDocumentsDirectory();
+  await Hive.initFlutter(appDocDir.path);
+  await Hive.openBox<int>('balances');
+
   // Инициализация Firebase
-  await Firebase.initializeApp(); 
-  FirebaseDatabase.instance.databaseURL = 'https://dodep-afb6b-default-rtdb.europe-west1.firebasedatabase.app';
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: "AIzaSyBTMb63N7KoAN6_AJfVmiBJO1qMprMp-pc",
+      appId: "1:279751409016:android:60753aecbdbf75a0699c8d",
+      messagingSenderId: "279751409016",
+      projectId: "dodep-afb6b",
+      storageBucket: "dodep-afb6b.firebasestorage.app",
+      databaseURL: "https://dodep-afb6b-default-rtdb.europe-west1.firebasedatabase.app",
+    ),
+  );
+
+  // Настройка Firestore
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+  // Тестовый код для проверки Firestore
+  try {
+    debugPrint('Проверка коллекции users:');
+    final usersSnapshot = await FirebaseFirestore.instance.collection('users').get();
+    for (var doc in usersSnapshot.docs) {
+      debugPrint('Документ пользователя: ${doc.id}');
+      debugPrint('Данные: ${doc.data()}');
+    }
+
+    debugPrint('\nПроверка коллекции usernames:');
+    final usernamesSnapshot = await FirebaseFirestore.instance.collection('usernames').get();
+    for (var doc in usernamesSnapshot.docs) {
+      debugPrint('Документ username: ${doc.id}');
+      debugPrint('Данные: ${doc.data()}');
+    }
+  } catch (e) {
+    debugPrint('Ошибка при проверке Firestore: $e');
+  }
   
   // Создаем экземпляр AuthService и инициализируем его
   final authService = AuthService();
@@ -33,7 +76,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider.value(value: authService), // AuthService должен быть первым
+        ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProxyProvider<AuthService, BalanceProvider>(
           create: (context) => BalanceProvider(),
           update: (context, authService, previous) {

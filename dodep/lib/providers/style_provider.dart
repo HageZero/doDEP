@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import 'dart:async'; // Добавляем импорт для TimeoutException
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/foundation.dart' show listEquals;
 import '../models/app_user.dart';
 import 'theme_provider.dart';
 import '../utils/global_keys.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/cache_service.dart';
 
 class SlotStyle {
   final String id;
@@ -31,7 +33,7 @@ class StyleProvider extends ChangeNotifier {
   final List<SlotStyle> _allSlotStyles = const [
     SlotStyle(id: 'classic', name: 'Классика', imageAsset: 'assets/images/logo.png'), // Классический стиль
     SlotStyle(id: 'fantasy_gacha', name: 'Фэнтези-гача', imageAsset: 'assets/images/fantasystyle.png', price: 3000),
-    SlotStyle(id: 'dresnya', name: 'Дресня', imageAsset: 'assets/images/slotstyle2.png', price: 1000),
+    SlotStyle(id: 'dresnya', name: 'Дресня', imageAsset: 'assets/images/dresnyastyle.png', price: 1000),
     SlotStyle(id: 'tokyopuk', name: 'Токийский пук', imageAsset: 'assets/images/tokyopukstyle.png', price: 4500),
     SlotStyle(id: 'lego', name: 'Лего', imageAsset: 'assets/images/legostyle.png', price: 6000),
     SlotStyle(id: 'minecraft', name: 'Майнкрафт', imageAsset: 'assets/images/minecraftstyle.png', price: 3800),
@@ -87,11 +89,16 @@ class StyleProvider extends ChangeNotifier {
       final currentUser = _authService.getCurrentUserSync();
 
       if (currentUser != null) {
-        // Загружаем из локального хранилища сначала
-        _loadFromLocalStorage();
+        // Загружаем из кэша
+        _boughtStyleIds = await CacheService.getPurchasedStyles();
+        _selectedStyleId = await CacheService.getSelectedStyle();
 
-        // Затем асинхронно обновляем из Firebase
-        _updateFromFirebase(currentUser);
+        // Проверяем подключение к интернету
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none) {
+          // Если есть интернет, обновляем из Firestore
+          await _updateFromFirebase(currentUser);
+        }
       } else {
         _loadFromLocalStorage();
       }
@@ -106,39 +113,44 @@ class StyleProvider extends ChangeNotifier {
   }
 
   Future<void> _updateFromFirebase(AppUser currentUser) async {
+    if (_isLoading) return;
+    _isLoading = true;
+
     try {
-      final database = FirebaseDatabase.instance;
-      final userSnapshot = await database
-          .ref()
-          .child('users/${currentUser.uid}/purchasedStyles')
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
           .get();
 
-      if (userSnapshot.exists) {
-        final purchasedStyles = (userSnapshot.value as List<dynamic>?)?.cast<String>() ?? [];
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        
+        // Обновляем купленные стили
+        final purchasedStyles = (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [];
         if (!listEquals(purchasedStyles, _boughtStyleIds)) {
           _boughtStyleIds = purchasedStyles;
           if (!_boughtStyleIds.contains('classic')) {
             _boughtStyleIds.add('classic');
-            await _authService.updateUserData(purchasedStyles: _boughtStyleIds);
+            await _authService.addPurchasedStyle('classic');
           }
-          await _prefs!.setStringList(_currentBoughtStylesKey, _boughtStyleIds);
+          // Сохраняем в кэш
+          await CacheService.savePurchasedStyles(_boughtStyleIds);
+          notifyListeners();
         }
-      }
 
-      final selectedStyleSnapshot = await database
-          .ref()
-          .child('users/${currentUser.uid}/selectedStyle')
-          .get();
-
-      if (selectedStyleSnapshot.exists) {
-        final selectedStyle = selectedStyleSnapshot.value as String?;
+        // Обновляем выбранный стиль
+        final selectedStyle = userData['selectedStyle'] as String?;
         if (selectedStyle != null && _boughtStyleIds.contains(selectedStyle) && selectedStyle != _selectedStyleId) {
           _selectedStyleId = selectedStyle;
-          await _prefs!.setString(_currentSelectedStyleKey, _selectedStyleId);
+          // Сохраняем в кэш
+          await CacheService.saveSelectedStyle(_selectedStyleId);
+          notifyListeners();
         }
       }
     } catch (e) {
-      debugPrint('Ошибка при обновлении стилей из Firebase: $e');
+      debugPrint('Ошибка при обновлении стилей из Firestore: $e');
+    } finally {
+      _isLoading = false;
     }
   }
 
@@ -163,47 +175,47 @@ class StyleProvider extends ChangeNotifier {
 
   // Покупка стиля
   Future<bool> buyStyle(SlotStyle style) async {
-    if (_boughtStyleIds.contains(style.id)) {
-      debugPrint('Стиль ${style.id} уже куплен');
-      return false;
-    }
-    
-    if (style.price == null) {
-      debugPrint('Стиль ${style.id} не имеет цены');
-      return false;
-    }
-
-    final currentUser = _authService.getCurrentUserSync();
-    if (currentUser == null) {
-      debugPrint('Пользователь не авторизован');
-      return false;
-    }
-
     try {
-      // Создаем новый список стилей
+      if (_boughtStyleIds.contains(style.id)) {
+        debugPrint('Стиль \x1b[36m${style.id}\x1b[0m уже куплен');
+        return false;
+      }
+      if (style.price == null) {
+        debugPrint('Стиль \x1b[36m${style.id}\x1b[0m не имеет цены');
+        return false;
+      }
+      final currentUser = _authService.getCurrentUserSync();
+      if (currentUser == null) {
+        debugPrint('Пользователь не авторизован');
+        return false;
+      }
+      // --- Всегда обновляем локально ---
       final updatedStyles = List<String>.from(_boughtStyleIds)..add(style.id);
-      
-      // Обновляем в Firebase
-      final database = FirebaseDatabase.instance;
-      await database
-          .ref()
-          .child('users/${currentUser.uid}')
-          .update({
-            'purchasedStyles': updatedStyles,
-          })
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException('Превышено время ожидания при обновлении стилей');
-            },
-          );
-      
-      // Обновляем локальное состояние
+      await CacheService.savePurchasedStyles(updatedStyles);
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setStringList(_currentBoughtStylesKey, updatedStyles);
       _boughtStyleIds = updatedStyles;
-      await _prefs!.setStringList(_currentBoughtStylesKey, _boughtStyleIds);
-      
       notifyListeners();
-      debugPrint('Стиль ${style.id} успешно куплен и сохранен в Firebase');
+
+      // --- Возвращаем успех сразу после локального обновления ---
+      // А sync с сервером делаем в фоне
+      Connectivity().checkConnectivity().then((connectivityResult) {
+        if (connectivityResult != ConnectivityResult.none) {
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser.uid)
+              .set({
+                'purchasedStyles': updatedStyles,
+                'lastUpdated': FieldValue.serverTimestamp(),
+              }, SetOptions(merge: true))
+              .catchError((e) {
+                debugPrint('Ошибка при синхронизации покупки стиля: $e');
+              });
+        } else {
+          debugPrint('Нет интернета, стиль куплен только локально');
+        }
+      });
+      debugPrint('Стиль ${style.id} успешно куплен');
       return true;
     } catch (e) {
       debugPrint('Ошибка при покупке стиля ${style.id}: $e');
@@ -213,47 +225,44 @@ class StyleProvider extends ChangeNotifier {
 
   // Применение стиля
   Future<void> selectStyle(String styleId) async {
-    if (!_boughtStyleIds.contains(styleId)) {
-      debugPrint('Стиль $styleId не куплен');
-      return;
-    }
-
-    final currentUser = _authService.getCurrentUserSync();
-    if (currentUser != null) {
-      try {
-        // Обновляем выбранный стиль в Firebase
-        final database = FirebaseDatabase.instance;
-        await database
-            .ref()
-            .child('users/${currentUser.uid}')
-            .update({
-              'selectedStyle': styleId,
-            })
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                throw TimeoutException('Превышено время ожидания при обновлении выбранного стиля');
-              },
-            );
-        
-        debugPrint('Выбранный стиль $styleId сохранен в Firebase');
-      } catch (e) {
-        debugPrint('Ошибка при обновлении выбранного стиля в Firebase: $e');
+    try {
+      if (!_boughtStyleIds.contains(styleId)) {
+        debugPrint('Стиль $styleId не куплен');
+        return;
       }
+      final currentUser = _authService.getCurrentUserSync();
+      // --- Всегда обновляем локально ---
+      await CacheService.saveSelectedStyle(styleId);
+      _selectedStyleId = styleId;
+      notifyListeners();
+      // --- Пробуем синхронизировать с сервером, если есть интернет ---
+      if (currentUser != null) {
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none) {
+          try {
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(currentUser.uid)
+                .set({
+                  'selectedStyle': styleId,
+                  'lastUpdated': FieldValue.serverTimestamp(),
+                }, SetOptions(merge: true));
+          } catch (e) {
+            debugPrint('Ошибка при синхронизации выбранного стиля: $e');
+          }
+        } else {
+          debugPrint('Нет интернета, стиль выбран только локально');
+        }
+      }
+      // Обновляем тему через BuildContext
+      if (navigatorKey.currentContext != null) {
+        final themeProvider = Provider.of<ThemeProvider>(navigatorKey.currentContext!, listen: false);
+        await themeProvider.setStyleTheme(styleId);
+      }
+      debugPrint('Выбран стиль $styleId');
+    } catch (e) {
+      debugPrint('Ошибка при обновлении выбранного стиля: $e');
     }
-
-    // Обновляем локальное состояние
-    _selectedStyleId = styleId;
-    await _prefs!.setString(_currentSelectedStyleKey, styleId);
-    
-    // Обновляем тему через BuildContext
-    if (navigatorKey.currentContext != null) {
-      final themeProvider = Provider.of<ThemeProvider>(navigatorKey.currentContext!, listen: false);
-      await themeProvider.setStyleTheme(styleId);
-    }
-    
-    notifyListeners();
-    debugPrint('Выбран стиль $styleId');
   }
 
   // Получить объект стиля по ID
@@ -274,6 +283,39 @@ class StyleProvider extends ChangeNotifier {
     if (!_isLoading) {
       _isInitialized = false;
       await _initializeStyles();
+    }
+  }
+
+  Future<void> _saveBoughtStyles() async {
+    if (_isLoading) return;
+    _isLoading = true;
+
+    try {
+      for (final styleId in _boughtStyleIds) {
+        await _authService.addPurchasedStyle(styleId);
+      }
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Ошибка при сохранении купленных стилей: $e');
+    } finally {
+      _isLoading = false;
+    }
+  }
+
+  Future<void> _loadBoughtStyles() async {
+    if (_isLoading) return;
+    _isLoading = true;
+
+    try {
+      final user = _authService.getCurrentUserSync();
+      if (user != null) {
+        _boughtStyleIds = List<String>.from(user.purchasedStyles);
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Ошибка при загрузке купленных стилей: $e');
+    } finally {
+      _isLoading = false;
     }
   }
 } 

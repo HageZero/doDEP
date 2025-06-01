@@ -1,9 +1,55 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/style_provider.dart';
+import '../providers/theme_provider.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
-class StyleScreen extends StatelessWidget {
+class StyleScreen extends StatefulWidget {
   const StyleScreen({Key? key}) : super(key: key);
+
+  @override
+  _StyleScreenState createState() => _StyleScreenState();
+}
+
+class _StyleScreenState extends State<StyleScreen> {
+  bool _isOffline = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSystemUI();
+    });
+    Connectivity().checkConnectivity().then((result) {
+      setState(() {
+        _isOffline = result == ConnectivityResult.none;
+      });
+    });
+  }
+
+  void _updateSystemUI() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+        systemNavigationBarColor: Theme.of(context).colorScheme.background,
+        systemNavigationBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateSystemUI();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +93,9 @@ class StyleScreen extends StatelessWidget {
                     color: isSelected ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surface,
                     child: InkWell(
                       onTap: () {
-                        styleProvider.selectStyle(style.id);
+                        if (!_isOffline) {
+                          styleProvider.selectStyle(style.id);
+                        }
                       },
                       borderRadius: BorderRadius.circular(12),
                       splashColor: Colors.transparent,

@@ -12,6 +12,10 @@ import '../models/app_user.dart';
 import 'settings_screen.dart';
 import '../providers/balance_provider.dart';
 import '../widgets/success_animation.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import '../services/cache_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -21,19 +25,40 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  File? _avatarImage;
   final _picker = ImagePicker();
   bool _showSuccessAnimation = false;
+  bool _isOffline = false;
+  String? _localAvatarPath;
+  bool? _hasInternet;
+  int? _avatarCacheBuster;
+  String? _lastNetworkAvatarPath;
 
   @override
   void initState() {
     super.initState();
-    _loadAvatar();
-    // Добавляем слушатель изменения темы
+    _avatarCacheBuster = DateTime.now().millisecondsSinceEpoch;
+    Connectivity().checkConnectivity().then((result) {
+      setState(() {
+        _hasInternet = result != ConnectivityResult.none;
+      });
+    });
+    CacheService.getAvatarLocalPath().then((localPath) {
+      if (localPath != null && File(localPath).existsSync()) {
+        setState(() {
+          _localAvatarPath = localPath;
+        });
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _updateSystemUI();
-      // Принудительно обновляем данные при входе в профиль
-      _refreshUserData();
+      Connectivity().checkConnectivity().then((result) {
+        setState(() {
+          _isOffline = result == ConnectivityResult.none;
+        });
+        if (!_isOffline) {
+          _refreshUserData();
+        }
+      });
     });
   }
 
@@ -54,30 +79,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Future<void> _loadAvatar() async {
-    try {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      final currentUser = authService.getCurrentUserSync();
-      
-      if (currentUser?.avatarPath != null && mounted) {
-          setState(() {
-          _avatarImage = null; // Сбрасываем локальный файл
-          });
-        debugPrint('Загружен путь к аватару из Firebase: ${currentUser!.avatarPath}');
-      }
-    } catch (e) {
-      debugPrint('Ошибка при загрузке аватара: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ошибка при загрузке аватара: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-      }
-    }
-  }
-
   Future<bool> _requestPermissions() async {
     if (Platform.isAndroid) {
       if (await Permission.storage.request().isGranted) {
@@ -92,6 +93,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return false;
     }
     return true;
+  }
+
+  Future<void> _cacheNetworkAvatar(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final dir = await getApplicationDocumentsDirectory();
+        final localPath = '${dir.path}/profile_avatar.jpg';
+        final localFile = File(localPath);
+        await localFile.writeAsBytes(response.bodyBytes);
+        await CacheService.saveAvatarLocalPath(localPath);
+        if (mounted) {
+          setState(() {
+            _localAvatarPath = localPath;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Ошибка при кэшировании аватара: $e');
+    }
+  }
+
+  Future<void> _updateLocalAvatarPath() async {
+    final localPath = await CacheService.getAvatarLocalPath();
+    if (mounted) {
+      setState(() {
+        _localAvatarPath = (localPath != null && File(localPath).existsSync()) ? localPath : null;
+      });
+    }
+  }
+
+  Future<void> _afterAvatarChanged(String? avatarPath) async {
+    if (avatarPath != null && avatarPath.startsWith('http')) {
+      await _cacheNetworkAvatar(avatarPath);
+    }
+    await _updateLocalAvatarPath();
   }
 
   Future<void> _pickImage() async {
@@ -175,8 +212,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           );
 
           if (croppedFile != null && mounted) {
-            // Обновляем текст в диалоге
-            Navigator.of(context).pop();
+            Navigator.of(context).pop(); // Закрываем диалог подготовки
             showDialog(
               context: context,
               barrierDismissible: false,
@@ -185,7 +221,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.primary,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -202,11 +238,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             try {
               final authService = Provider.of<AuthService>(context, listen: false);
               await authService.setCurrentUserAvatar(croppedFile.path);
-              
+              await Future.delayed(const Duration(seconds: 2));
               if (mounted) {
                 Navigator.of(context).pop(); // Закрываем диалог загрузки
+                await authService.forceRefreshUserData();
+                final newAvatarPath = authService.getCurrentUserSync()?.avatarPath;
+                await _afterAvatarChanged(newAvatarPath);
                 setState(() {
                   _showSuccessAnimation = true;
+                  _avatarCacheBuster = DateTime.now().millisecondsSinceEpoch;
                 });
                 _updateSystemUI();
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -261,14 +301,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       await authService.forceRefreshUserData();
-      
-      // Обновляем баланс
       final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
-      await balanceProvider.updateBalanceForUser();
-      
+      int retry = 0;
+      while (balanceProvider.ignoreRemoteBalanceUpdate && retry < 5) {
+        debugPrint('[ProfileScreen] sync/load заблокирован (ignoreRemoteBalanceUpdate=true), жду...');
+        await Future.delayed(const Duration(seconds: 1));
+        retry++;
+      }
+      if (!balanceProvider.ignoreRemoteBalanceUpdate) {
+        debugPrint('[ProfileScreen] _refreshUserData: до syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+        await balanceProvider.syncLocalOrLoadRemoteBalance();
+        debugPrint('[ProfileScreen] _refreshUserData: после syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+      } else {
+        debugPrint('[ProfileScreen] sync/load так и не разблокирован, пропускаю syncLocalOrLoadRemoteBalance');
+      }
       // Обновляем аватар
-      await _loadAvatar();
-      
       if (mounted) {
         setState(() {});
       }
@@ -353,68 +400,52 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: Column(
                   children: [
-                        Consumer<AuthService>(
-                          builder: (context, authService, _) {
-                            final user = authService.getCurrentUserSync();
-                            return CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                              child: user?.avatarPath != null
-                          ? ClipOval(
-                                      child: Image.network(
-                                        user!.avatarPath!,
+                    Consumer<AuthService>(
+                      builder: (context, authService, _) {
+                        final avatarPath = authService.getCurrentUserSync()?.avatarPath;
+                        if (_hasInternet == true && avatarPath != null && avatarPath.startsWith('http')) {
+                          return CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            child: ClipOval(
+                              child: Image.network(
+                                avatarPath,
+                                key: ValueKey(avatarPath),
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
-                                        loadingBuilder: (context, child, loadingProgress) {
-                                          if (loadingProgress == null) return child;
-                                          return Center(
-                                            child: CircularProgressIndicator(
-                                              value: loadingProgress.expectedTotalBytes != null
-                                                  ? loadingProgress.cumulativeBytesLoaded /
-                                                      loadingProgress.expectedTotalBytes!
-                                                  : null,
-                                              color: Theme.of(context).colorScheme.primary,
-                                            ),
-                                          );
-                                        },
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return Center(child: CircularProgressIndicator());
+                                },
                                 errorBuilder: (context, error, stackTrace) {
-                                          debugPrint('Ошибка загрузки аватара: $error');
-                                  return ClipOval(
-                                    child: Image.asset(
-                                      'assets/images/default_avatar.jpg',
+                                  if (_localAvatarPath != null) {
+                                    return Image.file(
+                                      File(_localAvatarPath!),
                                       width: 100,
                                       height: 100,
                                       fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Icon(
-                                          Icons.person,
-                                          size: 50,
-                                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                        );
-                                      },
-                                    ),
-                                  );
-                                },
-                              ),
-                            )
-                          : ClipOval(
-                              child: Image.asset(
-                                'assets/images/default_avatar.jpg',
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.person,
-                                    size: 50,
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  );
+                                    );
+                                  }
+                                  return Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer);
                                 },
                               ),
                             ),
-                            );
-                          },
+                          );
+                        } else if (_localAvatarPath != null) {
+                          return CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            backgroundImage: FileImage(File(_localAvatarPath!)),
+                          );
+                        } else {
+                          return CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                            child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                          );
+                        }
+                      },
                     ),
                     const SizedBox(height: 16),
                     Consumer<AuthService>(

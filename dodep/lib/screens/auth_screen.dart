@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
 import '../themes/minecraft_theme.dart';
+import 'package:flutter/services.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -17,14 +19,40 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLogin = true;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _obscurePassword = true;
 
   @override
   void initState() {
     super.initState();
-    // Проверяем состояние аутентификации при инициализации экрана
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSystemUI();
       _checkAuthState();
     });
+  }
+
+  void _updateSystemUI() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final backgroundColor = Theme.of(context).colorScheme.background;
+    
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+        systemNavigationBarColor: backgroundColor,
+        systemNavigationBarDividerColor: backgroundColor,
+        systemNavigationBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateSystemUI();
   }
 
   Future<void> _checkAuthState() async {
@@ -97,6 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),
@@ -138,11 +167,22 @@ class _AuthScreenState extends State<AuthScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _passwordController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Пароль',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscurePassword = !_obscurePassword;
+                        });
+                      },
+                    ),
                   ),
-                  obscureText: true,
+                  obscureText: _obscurePassword,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Пожалуйста, введите пароль';

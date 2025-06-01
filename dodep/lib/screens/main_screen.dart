@@ -15,6 +15,9 @@ import 'package:video_player/video_player.dart';
 import '../services/auth_service.dart';
 import '../providers/balance_provider.dart';
 import '../providers/style_provider.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);
@@ -34,6 +37,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   late Animation<double> _textOpacityAnimation;
 
   late final List<Widget> _screens;
+  bool _isOffline = false;
 
   @override
   void initState() {
@@ -59,15 +63,15 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
     _textAnimationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 500),
     );
 
     _textScaleAnimation = Tween<double>(
-      begin: 0.5,
+      begin: 0.8,
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _textAnimationController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,
     ));
 
     _textOpacityAnimation = Tween<double>(
@@ -75,7 +79,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       end: 1.0,
     ).animate(CurvedAnimation(
       parent: _textAnimationController,
-      curve: const Interval(0.0, 0.5, curve: Curves.easeIn),
+      curve: Curves.easeIn,
     ));
 
     _videoController = VideoPlayerController.asset('assets/videos/english.mp4');
@@ -95,16 +99,38 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       }
     });
 
-    _updateUserData();
+    Connectivity().checkConnectivity().then((result) {
+      setState(() {
+        _isOffline = result == ConnectivityResult.none;
+      });
+      if (!_isOffline) {
+        _updateUserData();
+      }
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSystemUI();
+    });
   }
 
   Future<void> _updateUserData() async {
     final authService = Provider.of<AuthService>(context, listen: false);
     final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
     final styleProvider = Provider.of<StyleProvider>(context, listen: false);
-
     await authService.updateUserData();
-    await balanceProvider.updateBalanceForUser();
+    int retry = 0;
+    while (balanceProvider.ignoreRemoteBalanceUpdate && retry < 5) {
+      debugPrint('[MainScreen] sync/load заблокирован (ignoreRemoteBalanceUpdate=true), жду...');
+      await Future.delayed(const Duration(seconds: 1));
+      retry++;
+    }
+    if (!balanceProvider.ignoreRemoteBalanceUpdate) {
+      debugPrint('[MainScreen] _updateUserData: до syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+      await balanceProvider.syncLocalOrLoadRemoteBalance();
+      debugPrint('[MainScreen] _updateUserData: после syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+    } else {
+      debugPrint('[MainScreen] sync/load так и не разблокирован, пропускаю syncLocalOrLoadRemoteBalance');
+    }
     await styleProvider.updateStylesForUser();
   }
 
@@ -133,9 +159,34 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _animationController.forward(from: 0.0);
   }
 
+  // Добавляем метод для обновления системного UI
+  void _updateSystemUI() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+        systemNavigationBarColor: Theme.of(context).colorScheme.background,
+        systemNavigationBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateSystemUI();
+  }
+
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
+    final balanceProvider = Provider.of<BalanceProvider>(context);
+    debugPrint('[MainScreen] build: текущий баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
     
     // Удаляем обработку видео, так как оно теперь показывается в SettingsScreen
     return Stack(
@@ -152,12 +203,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               });
             },
           ),
-          bottomNavigationBar: CustomBottomNav(
-            selectedIndex: _selectedIndex,
-            onTap: (index) {
-              if (!languageProvider.showVideo) {
-                _onItemTapped(index);
-              }
+          bottomNavigationBar: ValueListenableBuilder<bool>(
+            valueListenable: PlayScreen.isFreeSpinNotifier,
+            builder: (context, isFreeSpin, child) {
+              return CustomBottomNav(
+                selectedIndex: _selectedIndex,
+                onTap: (index) {
+                  if (!languageProvider.showVideo && !isFreeSpin) {
+                    _onItemTapped(index);
+                  }
+                },
+              );
             },
           ),
         ),

@@ -9,6 +9,8 @@ import '../providers/style_provider.dart';
 import 'main_screen.dart';
 import 'auth_screen.dart';
 import '../services/auth_service.dart';
+import 'package:flutter/services.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -171,6 +173,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     _controller.forward();
     _textAnimationController.forward();
     _initializeApp();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateSystemUI();
+    });
   }
 
   @override
@@ -189,33 +195,82 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Future<void> _initializeApp() async {
     try {
       debugPrint('Начало инициализации приложения');
-      
-      // Инициализируем AuthService первым
       final authService = Provider.of<AuthService>(context, listen: false);
-      await authService.initAuthState();
-      
-      // Затем инициализируем остальные провайдеры
-    await Future.wait([
-      Provider.of<ThemeProvider>(context, listen: false).initialize(),
-      Provider.of<BalanceProvider>(context, listen: false).initialize(),
-      Provider.of<StyleProvider>(context, listen: false).initialize(),
-    ]);
+      final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+      final styleProvider = Provider.of<StyleProvider>(context, listen: false);
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
 
-      // Добавляем небольшую задержку для анимации
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted) {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (connectivityResult == ConnectivityResult.none) {
+        debugPrint('[SplashScreen] Нет интернета, инициализация только локальных данных');
+        await Future.wait([
+          themeProvider.initialize(),
+          balanceProvider.initialize(),
+          styleProvider.initialize(),
+        ]);
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          final currentUser = authService.getCurrentUserSync();
+          debugPrint('Проверка состояния пользователя (оффлайн): \\${currentUser?.username ?? 'не авторизован'}');
+          if (currentUser != null) {
+            debugPrint('Переход на главный экран (оффлайн)');
+            Navigator.pushReplacementNamed(context, '/main');
+          } else {
+            debugPrint('Переход на экран авторизации (оффлайн)');
+            Navigator.pushReplacementNamed(context, '/auth');
+          }
+        }
+        return;
+      }
+      // --- Обычная онлайн-логика ---
+      bool completed = false;
+      await Future.any([
+        Future(() async {
+          await authService.initAuthState();
+          debugPrint('[SplashScreen] _initializeApp: до syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+          int retry = 0;
+          while (balanceProvider.ignoreRemoteBalanceUpdate && retry < 5) {
+            debugPrint('[SplashScreen] sync/load заблокирован (ignoreRemoteBalanceUpdate=true), жду...');
+            await Future.delayed(const Duration(seconds: 1));
+            retry++;
+          }
+          if (!balanceProvider.ignoreRemoteBalanceUpdate) {
+            await Future.wait([
+              themeProvider.initialize(),
+              balanceProvider.syncLocalOrLoadRemoteBalance(),
+              styleProvider.initialize(),
+            ]);
+          } else {
+            debugPrint('[SplashScreen] sync/load так и не разблокирован, пропускаю syncLocalOrLoadRemoteBalance');
+            await Future.wait([
+              themeProvider.initialize(),
+              styleProvider.initialize(),
+            ]);
+          }
+          debugPrint('[SplashScreen] _initializeApp: после syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+          await Future.delayed(const Duration(seconds: 2));
+          completed = true;
+          if (mounted) {
+            final currentUser = authService.getCurrentUserSync();
+            debugPrint('Проверка состояния пользователя: \\${currentUser?.username ?? 'не авторизован'}');
+            if (currentUser != null) {
+              debugPrint('Переход на главный экран');
+              Navigator.pushReplacementNamed(context, '/main');
+            } else {
+              debugPrint('Переход на экран авторизации');
+              Navigator.pushReplacementNamed(context, '/auth');
+            }
+          }
+        }),
+        Future.delayed(const Duration(seconds: 5)),
+      ]);
+      if (!completed && mounted) {
+        debugPrint('[SplashScreen] Таймаут! Принудительный переход по локальным данным');
         final currentUser = authService.getCurrentUserSync();
-        debugPrint('Проверка состояния пользователя: ${currentUser?.username ?? 'не авторизован'}');
-
-      if (mounted) {
         if (currentUser != null) {
-            debugPrint('Переход на главный экран');
           Navigator.pushReplacementNamed(context, '/main');
         } else {
-            debugPrint('Переход на экран авторизации');
           Navigator.pushReplacementNamed(context, '/auth');
-          }
         }
       }
     } catch (e) {
@@ -295,8 +350,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final isDark = themeProvider.isDarkMode;
+    final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    debugPrint('[SplashScreen] build: текущий баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
 
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // Фоновый градиент
@@ -419,6 +477,31 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
         ],
       ),
     );
+  }
+
+  void _updateSystemUI() {
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final backgroundColor = Theme.of(context).colorScheme.background;
+    
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+        systemNavigationBarColor: backgroundColor,
+        systemNavigationBarDividerColor: backgroundColor,
+        systemNavigationBarIconBrightness: themeProvider.isDarkMode 
+            ? Brightness.light 
+            : Brightness.dark,
+      ),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _updateSystemUI();
   }
 }
 

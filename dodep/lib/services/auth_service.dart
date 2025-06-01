@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/app_user.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
-import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'dart:async';
@@ -12,15 +12,26 @@ import 'package:http_parser/http_parser.dart';
 import 'package:cloudinary_public/cloudinary_public.dart';
 import 'package:crypto/crypto.dart';
 import 'package:dio/dio.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'cache_service.dart';
+import '../providers/balance_provider.dart';
+import 'package:provider/provider.dart';
+import '../utils/global_keys.dart';
+import 'package:hive/hive.dart';
+import 'package:path_provider/path_provider.dart';
 
 class AuthService extends ChangeNotifier {
   static const String _currentUserKey = 'currentUser';
   static const String _avatarKeyPrefix = 'avatar_';
   final firebase_auth.FirebaseAuth _auth = firebase_auth.FirebaseAuth.instance;
-  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   AppUser? _currentUser;
   bool _isInitialized = false;
   bool _isInitializing = false;
+  bool _isOnline = true;
+  Timer? _syncTimer;
+  final _connectivity = Connectivity();
+  bool _isUpdating = false;
 
   // Добавляем константы для Cloudinary
   static const String _cloudName = 'dc4fdzw9j';
@@ -34,7 +45,75 @@ class AuthService extends ChangeNotifier {
   );
 
   AuthService() {
-    // Убираем автоматическую инициализацию из конструктора
+    _initConnectivity();
+    _setupConnectivityListener();
+  }
+
+  Future<void> _initConnectivity() async {
+    try {
+      final result = await _connectivity.checkConnectivity();
+      _isOnline = result != ConnectivityResult.none;
+      if (_isOnline) {
+        _startSyncTimer();
+      }
+    } catch (e) {
+      debugPrint('Ошибка при проверке подключения: $e');
+    }
+  }
+
+  void _setupConnectivityListener() {
+    _connectivity.onConnectivityChanged.listen((List<ConnectivityResult> results) {
+      _isOnline = !results.contains(ConnectivityResult.none);
+      if (_isOnline) {
+        _startSyncTimer();
+        _syncWithFirestore();
+      } else {
+        _syncTimer?.cancel();
+      }
+      notifyListeners();
+    });
+  }
+
+  void _startSyncTimer() {
+    _syncTimer?.cancel();
+    _syncTimer = Timer.periodic(const Duration(minutes: 5), (_) {
+      if (_isOnline) {
+        _syncWithFirestore();
+      }
+    });
+  }
+
+  Future<void> _syncWithFirestore() async {
+    if (!_isOnline || _currentUser == null) return;
+
+    try {
+      final userDoc = await _firestore
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .get();
+
+      if (userDoc.exists) {
+        final userData = userDoc.data() as Map<String, dynamic>;
+        final localUser = _currentUser!;
+
+        // Синхронизируем только если данные в Firestore новее
+        if (userData['lastUpdated'] != null) {
+          final serverTimestamp = (userData['lastUpdated'] as Timestamp).toDate();
+          final localtimestamp = localUser.lastUpdated ?? DateTime.now().subtract(const Duration(days: 1));
+
+          if (serverTimestamp.isAfter(localtimestamp)) {
+            _currentUser = AppUser.fromJson({
+              ...userData,
+              'uid': _currentUser!.uid,
+            });
+            await _saveUserDataLocally();
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Ошибка при синхронизации с Firestore: $e');
+    }
   }
 
   Future<void> initAuthState() async {
@@ -51,20 +130,15 @@ class AuthService extends ChangeNotifier {
       if (currentUser != null) {
         debugPrint('Найден текущий пользователь в Firebase Auth: ${currentUser.uid}');
         try {
-          // Загружаем данные пользователя из Realtime Database
-          final userSnapshot = await _database
-              .child('users/${currentUser.uid}')
-              .get()
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException('Превышено время ожидания при загрузке данных пользователя');
-                },
-              );
+          // Загружаем данные пользователя из Firestore
+          final userDoc = await _firestore
+              .collection('users')
+              .doc(currentUser.uid)
+              .get();
 
-          if (userSnapshot.exists) {
-            debugPrint('Данные пользователя найдены в базе');
-            final userData = userSnapshot.value as Map<dynamic, dynamic>;
+          if (userDoc.exists) {
+            debugPrint('Данные пользователя найдены в Firestore');
+            final userData = userDoc.data() as Map<String, dynamic>;
             debugPrint('Данные пользователя: $userData');
             
             _currentUser = AppUser(
@@ -75,7 +149,26 @@ class AuthService extends ChangeNotifier {
               spinsCount: userData['spinsCount'] as int? ?? 0,
               maxWin: userData['maxWin'] as int? ?? 0,
               avatarPath: userData['avatarPath'] as String?,
+              lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
             );
+            
+            // Кэшируем аватар при наличии url
+            final avatarUrl = userData['avatarPath'] as String?;
+            if (avatarUrl != null && avatarUrl.isNotEmpty) {
+              try {
+                final response = await http.get(Uri.parse(avatarUrl));
+                if (response.statusCode == 200) {
+                  final dir = await getApplicationDocumentsDirectory();
+                  final localPath = '${dir.path}/profile_avatar.jpg';
+                  final localFile = File(localPath);
+                  await localFile.writeAsBytes(response.bodyBytes);
+                  await CacheService.saveAvatarLocalPath(localPath);
+                  debugPrint('initAuthState: аватар кэширован локально: $localPath');
+                }
+              } catch (e) {
+                debugPrint('initAuthState: ошибка при кэшировании аватара: $e');
+              }
+            }
             
             debugPrint('Создан объект пользователя:');
             debugPrint('Username: ${_currentUser!.username}');
@@ -86,18 +179,15 @@ class AuthService extends ChangeNotifier {
             notifyListeners();
             debugPrint('Данные пользователя успешно загружены и сохранены');
           } else {
-            debugPrint('Данные пользователя не найдены в базе');
-            // Пытаемся восстановить из локального хранилища
+            debugPrint('Данные пользователя не найдены в Firestore');
             await _restoreUserStateFromLocal();
           }
         } catch (e) {
           debugPrint('Ошибка при загрузке данных пользователя: $e');
-          // Пытаемся восстановить из локального хранилища
           await _restoreUserStateFromLocal();
         }
       } else {
         debugPrint('Текущий пользователь не найден в Firebase Auth');
-        // Пытаемся восстановить из локального хранилища
         await _restoreUserStateFromLocal();
       }
 
@@ -107,41 +197,59 @@ class AuthService extends ChangeNotifier {
         if (user != null) {
           try {
             debugPrint('Загрузка данных для пользователя: ${user.uid}');
-            final userSnapshot = await _database
-                .child('users/${user.uid}')
-                .get()
-                .timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () {
-                    throw TimeoutException('Превышено время ожидания при загрузке данных пользователя');
-                  },
-                );
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .get();
 
-            if (userSnapshot.exists) {
-              debugPrint('Данные пользователя найдены в базе');
-              final userData = userSnapshot.value as Map<dynamic, dynamic>;
+            if (userDoc.exists) {
+              debugPrint('Данные пользователя найдены в Firestore');
+              final userData = userDoc.data() as Map<String, dynamic>;
               debugPrint('Данные пользователя: $userData');
-              
-              _currentUser = AppUser(
-                username: userData['username'] as String,
-                uid: user.uid,
-                balance: userData['balance'] as int? ?? 0,
-                purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [],
-                spinsCount: userData['spinsCount'] as int? ?? 0,
-                maxWin: userData['maxWin'] as int? ?? 0,
-                avatarPath: userData['avatarPath'] as String?,
-              );
-              
-              debugPrint('Создан объект пользователя:');
-              debugPrint('Username: ${_currentUser!.username}');
-              debugPrint('Balance: ${_currentUser!.balance}');
-              debugPrint('PurchasedStyles: ${_currentUser!.purchasedStyles}');
-              
+              try {
+                final context = navigatorKey.currentContext;
+                final balanceProvider = context != null ? Provider.of<BalanceProvider>(context, listen: false) : null;
+                if (balanceProvider != null && balanceProvider.justSynced) {
+                  debugPrint('[AuthService] authStateChanges: justSynced=true, не обновляем баланс из Firestore, оставляем локальный');
+                  _currentUser = _currentUser?.copyWith(
+                    purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? _currentUser!.purchasedStyles,
+                    selectedStyle: userData['selectedStyle'] as String? ?? _currentUser!.selectedStyle,
+                    spinsCount: userData['spinsCount'] as int? ?? _currentUser!.spinsCount,
+                    maxWin: userData['maxWin'] as int? ?? _currentUser!.maxWin,
+                    avatarPath: userData['avatarPath'] as String? ?? _currentUser!.avatarPath,
+                    lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate() ?? _currentUser!.lastUpdated,
+                  );
+                } else {
+                  _currentUser = AppUser(
+                    username: userData['username'] as String,
+                    uid: user.uid,
+                    balance: userData['balance'] as int? ?? 0,
+                    purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [],
+                    selectedStyle: userData['selectedStyle'] as String? ?? 'classic',
+                    spinsCount: userData['spinsCount'] as int? ?? 0,
+                    maxWin: userData['maxWin'] as int? ?? 0,
+                    avatarPath: userData['avatarPath'] as String?,
+                    lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
+                  );
+                }
+              } catch (e) {
+                _currentUser = AppUser(
+                  username: userData['username'] as String,
+                  uid: user.uid,
+                  balance: userData['balance'] as int? ?? 0,
+                  purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [],
+                  selectedStyle: userData['selectedStyle'] as String? ?? 'classic',
+                  spinsCount: userData['spinsCount'] as int? ?? 0,
+                  maxWin: userData['maxWin'] as int? ?? 0,
+                  avatarPath: userData['avatarPath'] as String?,
+                  lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
+                );
+              }
               await _saveUserDataLocally();
               notifyListeners();
               debugPrint('Данные пользователя успешно обновлены');
             } else {
-              debugPrint('Данные пользователя не найдены в базе');
+              debugPrint('Данные пользователя не найдены в Firestore');
               await _clearLocalUserData();
               _currentUser = null;
               notifyListeners();
@@ -225,6 +333,36 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> saveUserDataToFirestore() async {
+    if (!_isOnline || _currentUser == null) return;
+
+    try {
+      // Получаем актуальный баланс из Hive (или через BalanceProvider)
+      int actualBalance = _currentUser!.balance;
+      try {
+        final box = Hive.box<int>('balances');
+        final hiveKey = 'balance_${_currentUser!.username}';
+        if (box.containsKey(hiveKey)) {
+          actualBalance = box.get(hiveKey) ?? actualBalance;
+        }
+      } catch (e) {
+        debugPrint('Не удалось получить баланс из Hive для sync: $e');
+      }
+      _currentUser = _currentUser!.copyWith(balance: actualBalance);
+      await _firestore
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .set({
+            ..._currentUser!.toJson(),
+            'lastUpdated': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+      
+      debugPrint('Данные пользователя сохранены в Firestore');
+    } catch (e) {
+      debugPrint('Ошибка при сохранении данных в Firestore: $e');
+    }
+  }
+
   Future<void> _clearLocalUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -243,18 +381,25 @@ class AuthService extends ChangeNotifier {
     return '${_avatarKeyPrefix}${currentUser?.username ?? 'guest'}';
   }
 
-  Future<String?> getCurrentUserAvatar() async {
+  /// Возвращает локальный путь к аватару, если есть, иначе url из Firestore
+  Future<String?> getCurrentUserAvatarOfflineFirst() async {
     try {
+      final localPath = await CacheService.getAvatarLocalPath();
+      if (localPath != null && await File(localPath).exists()) {
+        debugPrint('Аватар найден локально: $localPath');
+        return localPath;
+      }
+      // Если нет локального файла — пробуем url из Firestore
       final user = _auth.currentUser;
       if (user != null) {
-        // Получаем путь к аватару из Firebase
-        final snapshot = await _database
-            .child('users/${user.uid}/avatarPath')
+        final snapshot = await _firestore
+            .collection('users')
+            .doc(user.uid)
             .get();
-
         if (snapshot.exists) {
-          final avatarPath = snapshot.value as String?;
-          debugPrint('Получен путь к аватару из Firebase: $avatarPath');
+          final userData = snapshot.data() as Map<String, dynamic>;
+          final avatarPath = userData['avatarPath'] as String?;
+          debugPrint('Получен путь к аватару из Firestore: $avatarPath');
           return avatarPath;
         }
       }
@@ -273,7 +418,6 @@ class AuthService extends ChangeNotifier {
       }
 
       debugPrint('Начало процесса обновления аватара');
-      
       // Проверяем размер файла
       final fileSize = await file.length();
       if (fileSize > 5 * 1024 * 1024) { // 5MB limit
@@ -284,6 +428,19 @@ class AuthService extends ChangeNotifier {
       final downloadUrl = await uploadAvatar(file);
       if (downloadUrl == null) {
         throw Exception('Не удалось загрузить аватар');
+      }
+      // Обновляем путь к аватару в Firestore
+      await setUserAvatar(downloadUrl);
+
+      // Сразу копируем локальный файл в кэш (profile_avatar.jpg)
+      try {
+        final dir = await getApplicationDocumentsDirectory();
+        final localPath = '${dir.path}/profile_avatar.jpg';
+        await file.copy(localPath);
+        await CacheService.saveAvatarLocalPath(localPath);
+        debugPrint('Локальный аватар обновлён сразу после смены: $localPath');
+      } catch (e) {
+        debugPrint('Ошибка при локальном обновлении аватара: $e');
       }
 
       debugPrint('Аватар успешно обновлен: $downloadUrl');
@@ -311,9 +468,9 @@ class AuthService extends ChangeNotifier {
       debugPrint('Используемый email для регистрации: $email');
 
       // Проверяем существование пользователя в таблице usernames
-      final usernameSnapshot = await _database
-          .child('usernames')
-          .child(username.toLowerCase())
+      final usernameSnapshot = await _firestore
+          .collection('usernames')
+          .doc(username.toLowerCase())
           .get();
 
       if (usernameSnapshot.exists) {
@@ -321,39 +478,10 @@ class AuthService extends ChangeNotifier {
         return false;
       }
 
-      // Проверяем, есть ли старые данные в таблице users
-      try {
-        final oldUserSnapshot = await _database
-            .child('users')
-            .orderByChild('username')
-            .equalTo(username)
-            .once();
-
-        if (oldUserSnapshot.snapshot.exists) {
-          debugPrint('Найдены старые данные пользователя');
-          // Удаляем старые данные из таблицы users
-          for (var child in oldUserSnapshot.snapshot.children) {
-            final oldUid = child.key;
-            if (oldUid != null) {
-              // Удаляем старые данные пользователя
-              await _database.child('users/$oldUid').remove();
-              debugPrint('Удалены старые данные пользователя: $oldUid');
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('Ошибка при проверке старых данных: $e');
-      }
-
       debugPrint('Попытка создания пользователя в Firebase Auth...');
       final userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw TimeoutException('Превышено время ожидания при создании пользователя');
-        },
       );
 
       if (userCredential.user != null) {
@@ -364,53 +492,55 @@ class AuthService extends ChangeNotifier {
           // Создаем начальные данные пользователя
           final initialUserData = {
             'username': username,
-            'createdAt': ServerValue.timestamp,
+            'createdAt': FieldValue.serverTimestamp(),
             'balance': 3000, // Начальный баланс 3000
-            'purchasedStyles': [
-              'classic', // Классический стиль
-            ],
+            'purchasedStyles': ['classic'], // Классический стиль
             'selectedStyle': 'classic', // Добавляем выбранный стиль
             'spinsCount': 0,
             'maxWin': 0,
             'avatarPath': null,
+            'lastUpdated': FieldValue.serverTimestamp(),
           };
 
           // Создаем записи в базе данных
           await Future.wait([
-            _database.child('users/$uid').set(initialUserData),
-            _database.child('usernames/${username.toLowerCase()}').set({
+            _firestore.collection('users').doc(uid).set(initialUserData),
+            _firestore.collection('usernames').doc(username.toLowerCase()).set({
               'uid': uid,
-              'createdAt': ServerValue.timestamp,
+              'createdAt': FieldValue.serverTimestamp(),
             }),
           ]);
           
           debugPrint('Данные пользователя сохранены в базе');
 
           // Создаем новый объект пользователя
-          final newUser = AppUser.fromJson({
-            ...initialUserData,
-            'uid': uid,
-          });
+          _currentUser = AppUser(
+            username: username,
+            uid: uid,
+            balance: 3000,
+            purchasedStyles: ['classic'],
+            selectedStyle: 'classic',
+            spinsCount: 0,
+            maxWin: 0,
+            avatarPath: null,
+            lastUpdated: DateTime.now(),
+          );
           
-          // Очищаем старые данные перед обновлением
-          await _clearLocalUserData();
-          
-          // Обновляем состояние
-          _currentUser = newUser;
-          await _saveUserDataLocally();
+          // Сохраняем в кэш
+          // await CacheService.saveBalance(3000); // БАЛАНС НЕ ХРАНИТЬ В SharedPreferences! Используйте только BalanceProvider/Hive.
+          await CacheService.savePurchasedStyles(['classic']);
+          await CacheService.saveSelectedStyle('classic');
+          await CacheService.saveLastSyncTimestamp();
           
           // Принудительно обновляем все провайдеры
           notifyListeners();
           
-          // Добавляем небольшую задержку для гарантии обновления UI
-          await Future.delayed(const Duration(milliseconds: 100));
-          
           debugPrint('Данные нового пользователя:');
-          debugPrint('Username: ${newUser.username}');
-          debugPrint('Balance: ${newUser.balance}');
-          debugPrint('PurchasedStyles: ${newUser.purchasedStyles}');
-          debugPrint('SpinsCount: ${newUser.spinsCount}');
-          debugPrint('MaxWin: ${newUser.maxWin}');
+          debugPrint('Username: ${_currentUser!.username}');
+          debugPrint('Balance: ${_currentUser!.balance}');
+          debugPrint('PurchasedStyles: ${_currentUser!.purchasedStyles}');
+          debugPrint('SpinsCount: ${_currentUser!.spinsCount}');
+          debugPrint('MaxWin: ${_currentUser!.maxWin}');
           
           debugPrint('Регистрация успешно завершена');
           return true;
@@ -447,9 +577,6 @@ class AuthService extends ChangeNotifier {
           debugPrint('Неизвестная ошибка Firebase Auth: ${e.code}');
       }
       return false;
-    } on TimeoutException {
-      debugPrint('Превышено время ожидания при регистрации');
-      return false;
     } catch (e) {
       debugPrint('Неизвестная ошибка при регистрации: $e');
       return false;
@@ -468,115 +595,81 @@ class AuthService extends ChangeNotifier {
       final email = '$username@dodepmail.com';
       debugPrint('Используемый email: $email');
 
-      int attempts = 0;
-      const maxAttempts = 3;
-      
-      while (attempts < maxAttempts) {
-        try {
-          debugPrint('Попытка входа #${attempts + 1}');
-          
+      // Сначала проверяем существование пользователя в Firestore
+      final usernameDoc = await _firestore
+          .collection('usernames')
+          .doc(username.toLowerCase())
+          .get();
+
+      if (!usernameDoc.exists) {
+        debugPrint('Пользователь не найден в базе данных');
+        return false;
+      }
+
+      // Пытаемся войти
           final userCredential = await _auth.signInWithEmailAndPassword(
             email: email,
             password: password,
-          ).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              throw TimeoutException('Превышено время ожидания при входе');
-            },
           );
 
           if (userCredential.user != null) {
             debugPrint('Вход выполнен успешно в Firebase Auth');
             final uid = userCredential.user!.uid;
             
-            // Очищаем старые данные перед загрузкой новых
-            await _clearLocalUserData();
-            
-            // Ждем немного, чтобы Firebase Auth успел обновить состояние
-            await Future.delayed(const Duration(milliseconds: 500));
-            
-            // Проверяем, что пользователь все еще авторизован
-            if (_auth.currentUser?.uid != uid) {
-              debugPrint('Ошибка: пользователь не авторизован после входа');
-              return false;
-            }
-            
-            // Получаем данные пользователя напрямую по UID
-            final userSnapshot = await _database
-                .child('users/$uid')
-                .get()
-                .timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () {
-                    throw TimeoutException('Превышено время ожидания при загрузке данных пользователя');
-                  },
-                );
+        // Получаем данные пользователя
+            final userDoc = await _firestore
+                .collection('users')
+                .doc(uid)
+                .get();
 
-            if (userSnapshot.exists) {
-              debugPrint('Пользователь найден в базе данных');
-              final userData = userSnapshot.value as Map<dynamic, dynamic>;
-              debugPrint('Данные пользователя из базы: $userData');
-              
-              if (userData['username'] != username) {
-                debugPrint('Ошибка: имя пользователя не совпадает');
-                await _auth.signOut();
-                return false;
-              }
-
-              // Создаем объект пользователя с полными данными
+            if (userDoc.exists) {
+          debugPrint('Данные пользователя найдены в Firestore');
+              final userData = userDoc.data() as Map<String, dynamic>;
+          
               _currentUser = AppUser(
                 username: userData['username'] as String,
                 uid: uid,
                 balance: userData['balance'] as int? ?? 0,
                 purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [],
+            selectedStyle: userData['selectedStyle'] as String? ?? 'classic',
                 spinsCount: userData['spinsCount'] as int? ?? 0,
                 maxWin: userData['maxWin'] as int? ?? 0,
                 avatarPath: userData['avatarPath'] as String?,
+                lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
               );
 
-              debugPrint('Создан объект пользователя:');
-              debugPrint('Username: ${_currentUser!.username}');
-              debugPrint('Balance: ${_currentUser!.balance}');
-              debugPrint('PurchasedStyles: ${_currentUser!.purchasedStyles}');
-
-              // Обновляем запись в usernames если её нет
-              try {
-                final usernameSnapshot = await _database
-                    .child('usernames')
-                    .child(username.toLowerCase())
-                    .get();
-
-                if (!usernameSnapshot.exists) {
-                  await _database.child('usernames/${username.toLowerCase()}').set({
-                    'uid': uid,
-                    'createdAt': ServerValue.timestamp,
-                  });
-                  debugPrint('Создана запись в таблице usernames');
-                }
-              } catch (e) {
-                debugPrint('Ошибка при обновлении таблицы usernames: $e');
+          // Кэшируем аватар при наличии url
+          final avatarUrl = userData['avatarPath'] as String?;
+          if (avatarUrl != null && avatarUrl.isNotEmpty) {
+            try {
+              final response = await http.get(Uri.parse(avatarUrl));
+              if (response.statusCode == 200) {
+                final dir = await getApplicationDocumentsDirectory();
+                final localPath = '${dir.path}/profile_avatar.jpg';
+                final localFile = File(localPath);
+                await localFile.writeAsBytes(response.bodyBytes);
+                await CacheService.saveAvatarLocalPath(localPath);
+                debugPrint('login: аватар кэширован локально: $localPath');
               }
+            } catch (e) {
+              debugPrint('login: ошибка при кэшировании аватара: $e');
+            }
+          }
 
-              // Сохраняем данные локально и обновляем состояние
-              await _saveUserDataLocally();
+          // Сохраняем в кэш
+          // await CacheService.saveBalance(_currentUser!.balance); // БАЛАНС НЕ ХРАНИТЬ В SharedPreferences! Используйте только BalanceProvider/Hive.
+          await CacheService.savePurchasedStyles(_currentUser!.purchasedStyles);
+          await CacheService.saveSelectedStyle(_currentUser!.selectedStyle);
+          if (_currentUser!.avatarPath != null) {
+            await CacheService.saveAvatar(_currentUser!.avatarPath!);
+          }
+          await CacheService.saveLastSyncTimestamp();
               
-              // Принудительно обновляем все провайдеры
               notifyListeners();
-              
-              // Добавляем небольшую задержку для гарантии обновления UI
-              await Future.delayed(const Duration(milliseconds: 100));
-              
-              // Проверяем финальное состояние
-              if (_auth.currentUser?.uid != uid) {
-                debugPrint('Ошибка: пользователь не авторизован после сохранения данных');
-                await _auth.signOut();
-                return false;
-              }
-              
               debugPrint('Вход успешно завершен');
               return true;
             } else {
-              debugPrint('Пользователь не найден в базе данных');
+          debugPrint('Данные пользователя не найдены в Firestore');
               await _auth.signOut();
               return false;
             }
@@ -584,20 +677,11 @@ class AuthService extends ChangeNotifier {
           
           debugPrint('Вход не выполнен');
           return false;
-        } catch (e) {
-          debugPrint('Ошибка при входе: $e');
-          attempts++;
-          if (attempts < maxAttempts) {
-            debugPrint('Повторная попытка входа...');
-            await Future.delayed(const Duration(seconds: 1));
-          }
-        }
-      }
-      
-      debugPrint('Превышено максимальное количество попыток входа');
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      debugPrint('Ошибка Firebase Auth при входе: ${e.code} - ${e.message}');
       return false;
     } catch (e) {
-      debugPrint('Критическая ошибка при входе: $e');
+      debugPrint('Неизвестная ошибка при входе: $e');
       return false;
     }
   }
@@ -621,57 +705,80 @@ class AuthService extends ChangeNotifier {
     return _currentUser;
   }
 
-  Future<void> updateUserData({
-    int? balance,
-    List<String>? purchasedStyles,
-    int? spinsCount,
-    int? maxWin,
-    String? avatarPath,
-  }) async {
+  Future<void> updateUserData() async {
+    if (_isUpdating) return;
+    _isUpdating = true;
     try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        final updates = <String, dynamic>{};
-        if (balance != null) updates['balance'] = balance;
-        if (purchasedStyles != null) updates['purchasedStyles'] = purchasedStyles;
-        if (spinsCount != null) updates['spinsCount'] = spinsCount;
-        if (maxWin != null) updates['maxWin'] = maxWin;
-        if (avatarPath != null) updates['avatarPath'] = avatarPath;
-
-        if (updates.isNotEmpty) {
-          debugPrint('Обновление данных пользователя в Firebase: $updates');
-          
-          // Обновляем данные в Firebase
-          await _database
-              .child('users/${user.uid}')
-              .update(updates)
-              .timeout(
-                const Duration(seconds: 10),
-                onTimeout: () {
-                  throw TimeoutException('Превышено время ожидания при обновлении данных');
-                },
-              );
-          
-          debugPrint('Данные успешно обновлены в Firebase');
-          
-          // После успешного обновления в Firebase обновляем локальные данные
-          if (_currentUser != null) {
-            _currentUser = _currentUser!.copyWith(
-              balance: balance ?? _currentUser!.balance,
-              purchasedStyles: purchasedStyles ?? _currentUser!.purchasedStyles,
-              spinsCount: spinsCount ?? _currentUser!.spinsCount,
-              maxWin: maxWin ?? _currentUser!.maxWin,
-              avatarPath: avatarPath ?? _currentUser!.avatarPath,
-            );
-            await _saveUserDataLocally();
-            notifyListeners();
-            debugPrint('Локальные данные обновлены');
-          }
-        }
+      final context = navigatorKey.currentContext;
+      final balanceProvider = context != null ? Provider.of<BalanceProvider>(context, listen: false) : null;
+      if (balanceProvider != null && balanceProvider.isSyncingBalance) {
+        debugPrint('[AuthService] updateUserData: идёт sync баланса, пропускаем загрузку из Firestore');
+        _isUpdating = false;
+        return;
       }
+      final user = _auth.currentUser;
+      if (user == null) {
+        debugPrint('updateUserData: пользователь не авторизован, пропуск');
+        _isUpdating = false;
+        return;
+      }
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) {
+        _currentUser = null;
+        await _clearLocalUserData();
+        notifyListeners();
+        return;
+      }
+      final userData = userDoc.data() as Map<String, dynamic>;
+      try {
+        if (balanceProvider != null && balanceProvider.justSynced) {
+          debugPrint('[AuthService] updateUserData: justSynced=true, не обновляем баланс из Firestore, оставляем локальный');
+          _currentUser = _currentUser?.copyWith(
+            purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? _currentUser!.purchasedStyles,
+            selectedStyle: userData['selectedStyle'] as String? ?? _currentUser!.selectedStyle,
+            spinsCount: userData['spinsCount'] as int? ?? _currentUser!.spinsCount,
+            maxWin: userData['maxWin'] as int? ?? _currentUser!.maxWin,
+            avatarPath: userData['avatarPath'] as String? ?? _currentUser!.avatarPath,
+            lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate() ?? _currentUser!.lastUpdated,
+          );
+        } else {
+          _currentUser = AppUser.fromJson(userData);
+        }
+      } catch (e) {
+        _currentUser = AppUser.fromJson(userData);
+      }
+      await _saveUserDataLocally();
+      notifyListeners();
     } catch (e) {
       debugPrint('Ошибка при обновлении данных пользователя: $e');
-      rethrow; // Пробрасываем ошибку дальше для обработки в UI
+    } finally {
+      _isUpdating = false;
+    }
+  }
+
+  Future<void> updateBalance(int newBalance) async {
+    if (_isUpdating) return;
+    _isUpdating = true;
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        debugPrint('updateBalance: пользователь не авторизован, пропуск');
+        _isUpdating = false;
+        return;
+      }
+      await _firestore.collection('users').doc(user.uid).set({
+        'balance': newBalance,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(balance: newBalance, lastUpdated: DateTime.now());
+        await _saveUserDataLocally();
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Ошибка при обновлении баланса: $e');
+    } finally {
+      _isUpdating = false;
     }
   }
 
@@ -679,26 +786,23 @@ class AuthService extends ChangeNotifier {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        final userRef = _database.child('users/${user.uid}');
-        
-        // Получаем текущее значение
-        final snapshot = await userRef.get();
-        if (snapshot.exists) {
-          final userData = snapshot.value as Map<dynamic, dynamic>;
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
           final currentCount = (userData['spinsCount'] as int?) ?? 0;
           final newCount = currentCount + 1;
           
           debugPrint('Увеличиваем счетчик вращений: $currentCount -> $newCount');
           
           // Обновляем в базе данных
-          await userRef
-              .update({'spinsCount': newCount})
-              .timeout(
-                const Duration(seconds: 3),
-                onTimeout: () {
-                  throw TimeoutException('Превышено время ожидания при обновлении счетчика');
-                },
-              );
+          await _firestore
+              .collection('users')
+              .doc(user.uid)
+              .update({'spinsCount': newCount});
           
           // Обновляем локальное состояние
           if (_currentUser != null) {
@@ -721,26 +825,23 @@ class AuthService extends ChangeNotifier {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        final userRef = _database.child('users/${user.uid}');
-        
-        // Получаем текущее значение
-        final snapshot = await userRef.get();
-        if (snapshot.exists) {
-          final userData = snapshot.value as Map<dynamic, dynamic>;
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
           final currentMaxWin = (userData['maxWin'] as int?) ?? 0;
           
           debugPrint('Проверка максимального выигрыша: текущий $currentMaxWin, новый $newWin');
           
           // Обновляем только если новое значение больше
           if (newWin > currentMaxWin) {
-            await userRef
-                .update({'maxWin': newWin})
-                .timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () {
-                    throw TimeoutException('Превышено время ожидания при обновлении максимального выигрыша');
-                  },
-                );
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .update({'maxWin': newWin});
             
             // Обновляем локальное состояние
             if (_currentUser != null) {
@@ -762,84 +863,62 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> updateBalance(int newBalance) async {
-    try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        final userRef = _database.child('users/${user.uid}');
-        
-        debugPrint('Обновление баланса: $newBalance');
-        
-        // Обновляем в базе данных
-        await userRef
-            .update({'balance': newBalance})
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                throw TimeoutException('Превышено время ожидания при обновлении баланса');
-              },
-            );
-        
-        // Обновляем локальное состояние
-        if (_currentUser != null) {
-          _currentUser = _currentUser!.copyWith(balance: newBalance);
-          await _saveUserDataLocally();
-          notifyListeners();
-          debugPrint('Баланс обновлен: $newBalance');
-        }
-      }
-    } catch (e) {
-      debugPrint('Ошибка при обновлении баланса: $e');
-      rethrow;
-    }
-  }
-
   Future<void> addPurchasedStyle(String styleId) async {
+    if (_isUpdating) return;
+    _isUpdating = true;
+
     try {
       final user = _auth.currentUser;
-      if (user != null) {
-        final userRef = _database.child('users/${user.uid}');
-        
-        debugPrint('Добавление купленного стиля: $styleId');
-        
-        // Получаем текущие стили
-        final snapshot = await userRef.get();
-        if (snapshot.exists) {
-          final userData = snapshot.value as Map<dynamic, dynamic>;
-          final currentStyles = (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [];
-          
-          if (!currentStyles.contains(styleId)) {
-            final updatedStyles = [...currentStyles, styleId];
-            
-            // Обновляем в базе данных
-            await userRef
-                .update({'purchasedStyles': updatedStyles})
-                .timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () {
-                    throw TimeoutException('Превышено время ожидания при добавлении стиля');
-                  },
-                );
-            
-            // Обновляем локальное состояние
-            if (_currentUser != null) {
-              _currentUser = _currentUser!.copyWith(
-                purchasedStyles: updatedStyles,
-              );
-              await _saveUserDataLocally();
-              notifyListeners();
-              debugPrint('Стиль успешно добавлен: $styleId');
-            }
-          } else {
-            debugPrint('Стиль уже куплен: $styleId');
-          }
-        } else {
-          throw Exception('Данные пользователя не найдены');
+      if (user == null) return;
+
+      final userDoc = await _firestore.collection('users').doc(user.uid).get();
+      if (!userDoc.exists) return;
+
+          final userData = userDoc.data() as Map<String, dynamic>;
+      List<String> purchasedStyles = List<String>.from(userData['purchasedStyles'] ?? []);
+      
+      if (!purchasedStyles.contains(styleId)) {
+        purchasedStyles.add(styleId);
+        await _firestore.collection('users').doc(user.uid).set({
+          'purchasedStyles': purchasedStyles,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+          if (_currentUser != null) {
+          _currentUser = _currentUser!.copyWith(purchasedStyles: purchasedStyles);
+            await _saveUserDataLocally();
+            notifyListeners();
         }
       }
     } catch (e) {
       debugPrint('Ошибка при добавлении купленного стиля: $e');
-      rethrow;
+    } finally {
+      _isUpdating = false;
+    }
+  }
+
+  Future<void> setSelectedStyle(String styleId) async {
+    if (_isUpdating) return;
+    _isUpdating = true;
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      await _firestore.collection('users').doc(user.uid).set({
+        'selectedStyle': styleId,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+            if (_currentUser != null) {
+        _currentUser = _currentUser!.copyWith(selectedStyle: styleId);
+              await _saveUserDataLocally();
+              notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Ошибка при установке выбранного стиля: $e');
+    } finally {
+      _isUpdating = false;
     }
   }
 
@@ -847,25 +926,20 @@ class AuthService extends ChangeNotifier {
     try {
       final user = _auth.currentUser;
       if (user != null) {
-        debugPrint('Обновление аватара в Firebase: $path');
+        debugPrint('Обновление аватара в Firestore: $path');
         
-        // Обновляем путь к аватару в Firebase
-        await _database
-            .child('users/${user.uid}')
-            .update({'avatarPath': path})
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                throw TimeoutException('Превышено время ожидания при обновлении аватара');
-              },
-            );
+        // Обновляем путь к аватару в Firestore
+        await _firestore
+            .collection('users')
+            .doc(user.uid)
+            .update({'avatarPath': path});
         
         // Обновляем локальное состояние
         if (_currentUser != null) {
           _currentUser = _currentUser!.copyWith(avatarPath: path);
           await _saveUserDataLocally();
           notifyListeners();
-          debugPrint('Аватар успешно обновлен в Firebase и локально');
+          debugPrint('Аватар успешно обновлен в Firestore и локально');
         }
       }
     } catch (e) {
@@ -881,28 +955,31 @@ class AuthService extends ChangeNotifier {
         debugPrint('Начало процесса удаления аккаунта');
         
         // Получаем данные пользователя для удаления связанных записей
-        final userSnapshot = await _database
-            .child('users/${user.uid}')
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
             .get();
 
-        if (userSnapshot.exists) {
-          final userData = userSnapshot.value as Map<dynamic, dynamic>;
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
           final username = userData['username'] as String?;
           
           // Удаляем все данные пользователя
           try {
             // Удаляем запись из таблицы usernames
             if (username != null) {
-              await _database
-                  .child('usernames/${username.toLowerCase()}')
-                  .remove();
+              await _firestore
+                  .collection('usernames')
+                  .doc(username.toLowerCase())
+                  .delete();
               debugPrint('Удалена запись из таблицы usernames');
             }
 
             // Удаляем данные пользователя
-            await _database
-                .child('users/${user.uid}')
-                .remove();
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .delete();
             debugPrint('Удалены данные пользователя');
 
             // Удаляем локальные данные
@@ -947,6 +1024,12 @@ class AuthService extends ChangeNotifier {
   // Добавляем новый метод для принудительного обновления данных
   Future<void> forceRefreshUserData() async {
     try {
+      final context = navigatorKey.currentContext;
+      final balanceProvider = context != null ? Provider.of<BalanceProvider>(context, listen: false) : null;
+      if (balanceProvider != null && balanceProvider.isSyncingBalance) {
+        debugPrint('[AuthService] forceRefreshUserData: идёт sync баланса, пропускаем загрузку из Firestore');
+        return;
+      }
       final user = _auth.currentUser;
       if (user != null) {
         debugPrint('Принудительное обновление данных пользователя');
@@ -954,13 +1037,14 @@ class AuthService extends ChangeNotifier {
         // Очищаем старые данные
         await _clearLocalUserData();
         
-        // Получаем свежие данные из Firebase
-        final userSnapshot = await _database
-            .child('users/${user.uid}')
+        // Получаем свежие данные из Firestore
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(user.uid)
             .get();
 
-        if (userSnapshot.exists) {
-          final userData = userSnapshot.value as Map<dynamic, dynamic>;
+        if (userDoc.exists) {
+          final userData = userDoc.data() as Map<String, dynamic>;
           
           // Создаем новый объект пользователя
           final newUser = AppUser(
@@ -971,6 +1055,7 @@ class AuthService extends ChangeNotifier {
             spinsCount: userData['spinsCount'] as int? ?? 0,
             maxWin: userData['maxWin'] as int? ?? 0,
             avatarPath: userData['avatarPath'] as String?,
+            lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
           );
 
           // Обновляем состояние
@@ -1117,15 +1202,10 @@ class AuthService extends ChangeNotifier {
             debugPrint('Аватар успешно загружен в Cloudinary: $secureUrl');
 
             // Обновляем путь к аватару в базе данных
-            await _database
-                .child('users/${user.uid}')
-                .update({'avatarPath': secureUrl})
-                .timeout(
-                  const Duration(seconds: 10),
-                  onTimeout: () {
-                    throw TimeoutException('Превышено время ожидания при обновлении пути к аватару');
-                  },
-                );
+            await _firestore
+                .collection('users')
+                .doc(user.uid)
+                .update({'avatarPath': secureUrl});
 
             // Обновляем локальное состояние
             if (_currentUser != null) {
@@ -1196,15 +1276,10 @@ class AuthService extends ChangeNotifier {
       }
 
       // Очищаем путь к аватару в базе данных
-      await _database
-          .child('users/${user.uid}')
-          .update({'avatarPath': null})
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException('Превышено время ожидания при удалении аватара');
-            },
-          );
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update({'avatarPath': null});
 
       // Обновляем локальное состояние
       if (_currentUser != null) {
@@ -1224,5 +1299,18 @@ class AuthService extends ChangeNotifier {
     final bytes = utf8.encode(params);
     final digest = sha1.convert(bytes);
     return digest.toString();
+  }
+
+  // Публичный метод для обновления баланса локального пользователя (только локально, без Firestore)
+  void setCurrentUserBalance(int balance) {
+    if (_currentUser != null) {
+      _currentUser = _currentUser!.copyWith(balance: balance, lastUpdated: DateTime.now());
+    }
+  }
+
+  @override
+  void dispose() {
+    _syncTimer?.cancel();
+    super.dispose();
   }
 } 
