@@ -381,6 +381,11 @@ class AuthService extends ChangeNotifier {
     return '${_avatarKeyPrefix}${currentUser?.username ?? 'guest'}';
   }
 
+  String get _hiveBalanceKey {
+    final currentUser = getCurrentUserSync();
+    return 'balance_${currentUser?.username ?? 'guest'}';
+  }
+
   /// Возвращает локальный путь к аватару, если есть, иначе url из Firestore
   Future<String?> getCurrentUserAvatarOfflineFirst() async {
     try {
@@ -606,37 +611,56 @@ class AuthService extends ChangeNotifier {
         return false;
       }
 
+      // Очищаем все локальные данные перед входом
+      await _clearLocalUserData();
+      try {
+        final box = Hive.box<int>('balances');
+        await box.clear();
+      } catch (e) {
+        debugPrint('Ошибка при очистке Hive: $e');
+      }
+      await CacheService.clearAllCache();
+      debugPrint('Локальные данные очищены перед входом');
+
       // Пытаемся войти
-          final userCredential = await _auth.signInWithEmailAndPassword(
-            email: email,
-            password: password,
-          );
+      final userCredential = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
-          if (userCredential.user != null) {
-            debugPrint('Вход выполнен успешно в Firebase Auth');
-            final uid = userCredential.user!.uid;
-            
+      if (userCredential.user != null) {
+        debugPrint('Вход выполнен успешно в Firebase Auth');
+        final uid = userCredential.user!.uid;
+        
         // Получаем данные пользователя
-            final userDoc = await _firestore
-                .collection('users')
-                .doc(uid)
-                .get();
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(uid)
+            .get();
 
-            if (userDoc.exists) {
+        if (userDoc.exists) {
           debugPrint('Данные пользователя найдены в Firestore');
-              final userData = userDoc.data() as Map<String, dynamic>;
+          final userData = userDoc.data() as Map<String, dynamic>;
           
-              _currentUser = AppUser(
-                username: userData['username'] as String,
-                uid: uid,
-                balance: userData['balance'] as int? ?? 0,
-                purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [],
+          _currentUser = AppUser(
+            username: userData['username'] as String,
+            uid: uid,
+            balance: userData['balance'] as int? ?? 0,
+            purchasedStyles: (userData['purchasedStyles'] as List<dynamic>?)?.cast<String>() ?? [],
             selectedStyle: userData['selectedStyle'] as String? ?? 'classic',
-                spinsCount: userData['spinsCount'] as int? ?? 0,
-                maxWin: userData['maxWin'] as int? ?? 0,
-                avatarPath: userData['avatarPath'] as String?,
-                lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
-              );
+            spinsCount: userData['spinsCount'] as int? ?? 0,
+            maxWin: userData['maxWin'] as int? ?? 0,
+            avatarPath: userData['avatarPath'] as String?,
+            lastUpdated: (userData['lastUpdated'] as Timestamp?)?.toDate(),
+          );
+          
+          // Save the balance to Hive
+          try {
+            final box = Hive.box<int>('balances');
+            await box.put(_hiveBalanceKey, _currentUser!.balance);
+          } catch (e) {
+            debugPrint('Ошибка при сохранении баланса в Hive: $e');
+          }
 
           // Кэшируем аватар при наличии url
           final avatarUrl = userData['avatarPath'] as String?;
@@ -657,26 +681,25 @@ class AuthService extends ChangeNotifier {
           }
 
           // Сохраняем в кэш
-          // await CacheService.saveBalance(_currentUser!.balance); // БАЛАНС НЕ ХРАНИТЬ В SharedPreferences! Используйте только BalanceProvider/Hive.
           await CacheService.savePurchasedStyles(_currentUser!.purchasedStyles);
           await CacheService.saveSelectedStyle(_currentUser!.selectedStyle);
           if (_currentUser!.avatarPath != null) {
             await CacheService.saveAvatar(_currentUser!.avatarPath!);
           }
           await CacheService.saveLastSyncTimestamp();
-              
-              notifyListeners();
-              debugPrint('Вход успешно завершен');
-              return true;
-            } else {
-          debugPrint('Данные пользователя не найдены в Firestore');
-              await _auth.signOut();
-              return false;
-            }
-          }
           
-          debugPrint('Вход не выполнен');
+          notifyListeners();
+          debugPrint('Вход успешно завершен');
+          return true;
+        } else {
+          debugPrint('Данные пользователя не найдены в Firestore');
+          await _auth.signOut();
           return false;
+        }
+      }
+      
+      debugPrint('Вход не выполнен');
+      return false;
     } on firebase_auth.FirebaseAuthException catch (e) {
       debugPrint('Ошибка Firebase Auth при входе: ${e.code} - ${e.message}');
       return false;
@@ -688,10 +711,24 @@ class AuthService extends ChangeNotifier {
 
   Future<void> logout() async {
     try {
+      debugPrint('Начало процесса выхода');
+      
+      // Очищаем все локальные данные
+      await _clearLocalUserData();
+      try {
+        final box = Hive.box<int>('balances');
+        await box.clear();
+      } catch (e) {
+        debugPrint('Ошибка при очистке Hive: $e');
+      }
+      await CacheService.clearAllCache();
+      
+      // Выходим из Firebase Auth
       await _auth.signOut();
       _currentUser = null;
-      await _clearLocalUserData();
+      
       notifyListeners();
+      debugPrint('Выход успешно завершен');
     } catch (e) {
       debugPrint('Ошибка выхода: $e');
     }
@@ -871,27 +908,37 @@ class AuthService extends ChangeNotifier {
       final user = _auth.currentUser;
       if (user == null) return;
 
+      // Получаем текущие данные пользователя
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       if (!userDoc.exists) return;
 
-          final userData = userDoc.data() as Map<String, dynamic>;
+      final userData = userDoc.data() as Map<String, dynamic>;
       List<String> purchasedStyles = List<String>.from(userData['purchasedStyles'] ?? []);
       
       if (!purchasedStyles.contains(styleId)) {
         purchasedStyles.add(styleId);
+        
+        // Обновляем в Firestore
         await _firestore.collection('users').doc(user.uid).set({
           'purchasedStyles': purchasedStyles,
           'lastUpdated': FieldValue.serverTimestamp(),
         }, SetOptions(merge: true));
 
-          if (_currentUser != null) {
-          _currentUser = _currentUser!.copyWith(purchasedStyles: purchasedStyles);
-            await _saveUserDataLocally();
-            notifyListeners();
+        // Обновляем локальное состояние
+        if (_currentUser != null) {
+          _currentUser = _currentUser!.copyWith(
+            purchasedStyles: purchasedStyles,
+            lastUpdated: DateTime.now(),
+          );
+          await _saveUserDataLocally();
+          notifyListeners();
         }
+        
+        debugPrint('Стиль $styleId успешно добавлен в purchasedStyles');
       }
     } catch (e) {
       debugPrint('Ошибка при добавлении купленного стиля: $e');
+      rethrow;
     } finally {
       _isUpdating = false;
     }

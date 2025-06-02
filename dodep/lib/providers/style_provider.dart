@@ -189,7 +189,8 @@ class StyleProvider extends ChangeNotifier {
         debugPrint('Пользователь не авторизован');
         return false;
       }
-      // --- Всегда обновляем локально ---
+
+      // Обновляем локально
       final updatedStyles = List<String>.from(_boughtStyleIds)..add(style.id);
       await CacheService.savePurchasedStyles(updatedStyles);
       final prefs = await SharedPreferences.getInstance();
@@ -197,24 +198,20 @@ class StyleProvider extends ChangeNotifier {
       _boughtStyleIds = updatedStyles;
       notifyListeners();
 
-      // --- Возвращаем успех сразу после локального обновления ---
-      // А sync с сервером делаем в фоне
-      Connectivity().checkConnectivity().then((connectivityResult) {
-        if (connectivityResult != ConnectivityResult.none) {
-          FirebaseFirestore.instance
-              .collection('users')
-              .doc(currentUser.uid)
-              .set({
-                'purchasedStyles': updatedStyles,
-                'lastUpdated': FieldValue.serverTimestamp(),
-              }, SetOptions(merge: true))
-              .catchError((e) {
-                debugPrint('Ошибка при синхронизации покупки стиля: $e');
-              });
-        } else {
-          debugPrint('Нет интернета, стиль куплен только локально');
-        }
-      });
+      // Обновляем в Firestore через AuthService
+      try {
+        await _authService.addPurchasedStyle(style.id);
+        debugPrint('Стиль ${style.id} успешно добавлен в Firestore');
+      } catch (e) {
+        debugPrint('Ошибка при добавлении стиля в Firestore: $e');
+        // Откатываем локальные изменения в случае ошибки
+        _boughtStyleIds.remove(style.id);
+        await CacheService.savePurchasedStyles(_boughtStyleIds);
+        await prefs.setStringList(_currentBoughtStylesKey, _boughtStyleIds);
+        notifyListeners();
+        return false;
+      }
+
       debugPrint('Стиль ${style.id} успешно куплен');
       return true;
     } catch (e) {

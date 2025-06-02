@@ -6,6 +6,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hive/hive.dart';
 import 'dart:async';
 import 'package:flutter/widgets.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/app_user.dart';
 
 class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
   int _balance = 3000; // Начальный баланс
@@ -19,26 +21,58 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
   bool _isWaitingForAuthInit = false;
   bool _hasUnsyncedLocalChanges = false;
   bool _isSyncingBalance = false;
+  bool _isOnline = true; // Добавляем поле для отслеживания состояния интернета
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Добавляем экземпляр Firestore
 
   // --- Добавлено для отслеживания подключения ---
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   bool _wasOffline = false;
 
-  BalanceProvider() {
-    // Инициализация будет происходить через ChangeNotifierProxyProvider
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) {
+  // Геттер для текущего пользователя
+  AppUser? get _currentUser => _authService.getCurrentUserSync();
+
+  BalanceProvider(AuthService authService) {
+    _authService = authService;
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((results) async {
       final result = results.isNotEmpty ? results.first : ConnectivityResult.none;
-      if (result != ConnectivityResult.none) {
-        if (_hasUnsyncedLocalChanges) {
-          debugPrint('[BalanceProvider] Интернет появился, есть несинхронизированные изменения, пушим локальный баланс в Firestore');
-          syncLocalBalanceToServer();
-        } else {
-          debugPrint('[BalanceProvider] Интернет появился, но нет несинхронизированных изменений, sync не нужен');
+      _isOnline = result != ConnectivityResult.none;
+      
+      if (_isOnline) {
+        debugPrint('[BalanceProvider] Интернет появился, проверяем локальные изменения');
+        _isSyncingBalance = true;
+        
+        try {
+          final box = Hive.box<int>('balances');
+          final localBalance = box.get(_hiveBalanceKey);
+          
+          if (localBalance != null && localBalance != _balance) {
+            _hasUnsyncedLocalChanges = true;
+            debugPrint('[BalanceProvider] Интернет появился, обнаружены локальные изменения, баланс: $localBalance');
+            _balance = localBalance;
+            notifyListeners();
+            
+            await syncLocalBalanceToServer();
+            
+            _hasUnsyncedLocalChanges = false;
+            _justSynced = true;
+            _ignoreRemoteBalanceUpdate = true;
+            
+            Future.delayed(const Duration(seconds: 5), () {
+              _justSynced = false;
+              _ignoreRemoteBalanceUpdate = false;
+            });
+          } else {
+            debugPrint('[BalanceProvider] Интернет появился, но нет локальных изменений, загружаем с сервера');
+            await _forceLoadBalance();
+          }
+        } finally {
+          _isSyncingBalance = false;
         }
       }
-      _wasOffline = result == ConnectivityResult.none;
+      _wasOffline = !_isOnline;
     });
     WidgetsBinding.instance.addObserver(this);
+    _initBalance();
   }
 
   void updateAuthService(AuthService authService) {
@@ -83,14 +117,26 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
       await _migratePrefsToHiveIfNeeded();
       final box = Hive.box<int>('balances');
       final hiveKey = _hiveBalanceKey;
+      
+      // Проверяем наличие локальных изменений
       if (box.containsKey(hiveKey)) {
-        _balance = box.get(hiveKey)!;
-        debugPrint('[BalanceProvider] Баланс инициализирован из Hive: $_balance');
+        final localBalance = box.get(hiveKey)!;
+        _balance = localBalance;
+        _hasUnsyncedLocalChanges = true;
+        debugPrint('[BalanceProvider] Баланс инициализирован из Hive: $_balance (есть локальные изменения)');
+        
+        // Проверяем интернет
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none) {
+          debugPrint('[BalanceProvider] Есть интернет при инициализации, синхронизируем локальный баланс');
+          await syncLocalBalanceToServer();
+        }
       } else {
         _balance = 3000;
         await box.put(hiveKey, _balance);
         debugPrint('[BalanceProvider] Баланс по умолчанию (Hive): $_balance');
       }
+      
       notifyListeners();
       _isInitialized = true;
       debugPrint('BalanceProvider инициализирован');
@@ -101,36 +147,57 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
   }
 
   void _onAuthStateChanged() async {
-    debugPrint('Обнаружено изменение в AuthService');
-    if (_justSynced) {
-      debugPrint('[BalanceProvider] _onAuthStateChanged: только что был sync, пропускаем');
+    if (_isSyncingBalance) {
+      debugPrint('[BalanceProvider] _onAuthStateChanged: идет синхронизация, пропускаем');
       return;
     }
-    if (_ignoreRemoteBalanceUpdate) {
-      debugPrint('[BalanceProvider] _onAuthStateChanged: игнорируем обновление из Firebase, т.к. только что был sync (локальный баланс главный)');
+
+    debugPrint('[BalanceProvider] Обнаружено изменение в AuthService');
+    
+    // Сбрасываем все флаги синхронизации при смене пользователя
+    _ignoreRemoteBalanceUpdate = false;
+    _justSynced = false;
+    
+    if (_authService.getCurrentUserSync() != null) {
+      debugPrint('[BalanceProvider] _onAuthStateChanged: Загрузка баланса для нового пользователя');
+      
+      // Проверяем наличие локальных изменений
+      final box = Hive.box<int>('balances');
+      final localBalance = box.get(_hiveBalanceKey);
+      
+      // Проверяем интернет
+      final connectivityResult = await Connectivity().checkConnectivity();
+      
+      if (connectivityResult == ConnectivityResult.none) {
+        debugPrint('[BalanceProvider] _onAuthStateChanged: нет интернета, используем локальный баланс');
+        if (localBalance != null) {
+          _balance = localBalance;
+          _hasUnsyncedLocalChanges = true;
+          notifyListeners();
+        }
+        return;
+      }
+      
+      if (localBalance != null && localBalance != _balance) {
+        debugPrint('[BalanceProvider] _onAuthStateChanged: обнаружены локальные изменения, баланс: $localBalance');
+        _hasUnsyncedLocalChanges = true;
+        _balance = localBalance;
+        notifyListeners();
+        
+        // Синхронизируем локальный баланс с сервером
+        await syncLocalBalanceToServer();
+        
+        // Ждем 1 секунду после синхронизации
+        await Future.delayed(const Duration(seconds: 1));
+      } else {
+        debugPrint('[BalanceProvider] _onAuthStateChanged: нет локальных изменений, загружаем с сервера');
+        await _forceLoadBalance();
+      }
+    } else {
+      debugPrint('[BalanceProvider] _onAuthStateChanged: Пользователь не авторизован');
+      _balance = 3000;
       notifyListeners();
-      return;
     }
-    if ((_pendingSyncAfterAuth || _isWaitingForAuthInit) && _authService.getCurrentUserSync() != null) {
-      debugPrint('[BalanceProvider] _onAuthStateChanged: был отложенный sync после авторизации/инициализации, пушим локальный баланс');
-      await syncLocalBalanceToServer();
-      _pendingSyncAfterAuth = false;
-      _isWaitingForAuthInit = false;
-      return;
-    }
-    if (_justSynced) {
-      debugPrint('[BalanceProvider] _onAuthStateChanged: только что был sync, игнорируем обновление из Firebase');
-      notifyListeners();
-      return;
-    }
-    final didSync = await syncLocalBalanceIfNeeded();
-    if (didSync) {
-      debugPrint('[BalanceProvider] _onAuthStateChanged: был sync, оставляем локальный баланс: \x1b[33m${_balance}\x1b[0m');
-      notifyListeners();
-      return;
-    }
-    debugPrint('[BalanceProvider] _onAuthStateChanged: sync не был нужен, вызываем _syncOrLoadBalance');
-    await _syncOrLoadBalance();
   }
 
   Future<void> _syncOrLoadBalance() async {
@@ -167,94 +234,131 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
 
   /// Всегда пушит локальный баланс в Firestore и блокирует загрузку баланса из Firestore на 5 секунд
   Future<void> syncLocalBalanceToServer() async {
-    if (_justSynced) {
-      debugPrint('[BalanceProvider] syncLocalBalanceToServer: только что был sync, пропускаем');
+    if (_isSyncingBalance) {
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: идет синхронизация, пропускаем');
       return;
     }
-    if (!_hasUnsyncedLocalChanges) {
-      debugPrint('[BalanceProvider] syncLocalBalanceToServer: нет несинхронизированных изменений, sync не нужен');
+
+    // Проверяем интернет перед любыми операциями с Firebase
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: нет интернета, sync отложен');
+      _hasUnsyncedLocalChanges = true;
       return;
     }
-    _isSyncingBalance = true;
+
+    if (_currentUser == null) {
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: нет текущего пользователя');
+      return;
+    }
+
     try {
-      final box = Hive.box<int>('balances');
-      final localBalance = box.get(_hiveBalanceKey) ?? _balance;
-      final currentUser = _authService.getCurrentUserSync();
-      if (currentUser != null) {
-        try {
-          debugPrint('[BalanceProvider] syncLocalBalanceToServer: ПУШИМ в Firebase локальный баланс из Hive: $localBalance');
-          await _authService.updateBalance(localBalance);
-          debugPrint('[BalanceProvider] syncLocalBalanceToServer: updateBalance завершён');
-          _authService.setCurrentUserBalance(localBalance);
-          _balance = localBalance;
-          debugPrint('[BalanceProvider] syncLocalBalanceToServer: Локальный баланс синхронизирован с сервером: $_balance');
-          _ignoreRemoteBalanceUpdate = true;
-          _justSynced = true;
-          _hasUnsyncedLocalChanges = false;
-          // После sync баланса — пушим все остальные данные пользователя с актуальным балансом
-          await _authService.saveUserDataToFirestore();
-          Future.delayed(const Duration(seconds: 5), () {
-            if (_ignoreRemoteBalanceUpdate) {
-              _ignoreRemoteBalanceUpdate = false;
-              debugPrint('[BalanceProvider] syncLocalBalanceToServer: _ignoreRemoteBalanceUpdate снят');
-            }
-            _justSynced = false;
-            debugPrint('[BalanceProvider] syncLocalBalanceToServer: _justSynced снят');
-          });
-          notifyListeners();
-          _pendingSyncAfterAuth = false;
-          _isWaitingForAuthInit = false;
-        } catch (e) {
-          debugPrint('Ошибка при синхронизации баланса: $e');
-        }
-      } else {
-        debugPrint('[BalanceProvider] syncLocalBalanceToServer: пользователь не авторизован, sync будет выполнен после авторизации');
-        _pendingSyncAfterAuth = true;
-        _isWaitingForAuthInit = true;
-      }
+      _isSyncingBalance = true;
+      _ignoreRemoteBalanceUpdate = true;
+
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: начинаем синхронизацию');
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: текущий баланс: $_balance');
+
+      // Обновляем баланс в Firestore
+      await _firestore
+          .collection('users')
+          .doc(_currentUser!.uid)
+          .update({
+        'balance': _balance,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      // Ждем 2 секунды после обновления в Firebase
+      await Future.delayed(const Duration(seconds: 2));
+
+      _hasUnsyncedLocalChanges = false;
+      _justSynced = true;
+      
+      // Устанавливаем таймер для сброса флагов
+      Future.delayed(const Duration(seconds: 5), () {
+        _isSyncingBalance = false;
+        _ignoreRemoteBalanceUpdate = false;
+        _justSynced = false;
+      });
+      
+      notifyListeners();
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: баланс успешно синхронизирован');
+    } catch (e) {
+      debugPrint('[BalanceProvider] syncLocalBalanceToServer: ошибка синхронизации: $e');
+      _hasUnsyncedLocalChanges = true;
     } finally {
       _isSyncingBalance = false;
     }
   }
 
   Future<void> _forceLoadBalance() async {
+    if (_isSyncingBalance) {
+      debugPrint('[BalanceProvider] _forceLoadBalance: идет синхронизация, пропускаем');
+      return;
+    }
+    
     if (_justSynced) {
       debugPrint('[BalanceProvider] _forceLoadBalance: только что был sync, пропускаем');
       return;
     }
+    
     if (_ignoreRemoteBalanceUpdate) {
       debugPrint('[BalanceProvider] _forceLoadBalance: игнорируем обновление из Firebase, т.к. только что был sync (локальный баланс главный)');
+      return;
+    }
+
+    // Проверяем интернет перед любыми операциями с Firebase
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult == ConnectivityResult.none) {
+      debugPrint('[BalanceProvider] _forceLoadBalance: нет интернета, используем локальный баланс');
       final box = Hive.box<int>('balances');
-      await box.put(_hiveBalanceKey, _balance);
+      final localBalance = box.get(_hiveBalanceKey);
+      if (localBalance != null) {
+        _balance = localBalance;
+        _hasUnsyncedLocalChanges = true;
+        debugPrint('[BalanceProvider] _forceLoadBalance: установлен локальный баланс: $_balance');
+      }
       notifyListeners();
       return;
     }
+
     try {
-      final box = Hive.box<int>('balances');
-      final hasLocalUpdate = box.containsKey(_hiveBalanceKey);
-      if (hasLocalUpdate) {
-        debugPrint('[BalanceProvider] _forceLoadBalance: Есть несинхронизированные изменения, не перезаписываем локальный баланс');
-        _balance = box.get(_hiveBalanceKey) ?? 3000;
-        notifyListeners();
-        return;
-      }
+      _isSyncingBalance = true;
       final currentUser = _authService.getCurrentUserSync();
       if (currentUser != null) {
-        debugPrint('[BalanceProvider] _forceLoadBalance: Принудительная загрузка баланса из Firestore для пользователя: ${currentUser.username}');
-        _balance = currentUser.balance;
-        debugPrint('[BalanceProvider] _forceLoadBalance: Баланс из Firestore: $_balance');
-        await box.put(_hiveBalanceKey, _balance);
-        notifyListeners();
-        debugPrint('[BalanceProvider] _forceLoadBalance: Баланс успешно обновлен и сохранен');
+        debugPrint('[BalanceProvider] _forceLoadBalance: Загрузка баланса из Firestore для пользователя: ${currentUser.username}');
+        
+        // Загружаем баланс из Firestore
+        final userDoc = await _firestore.collection('users').doc(currentUser.uid).get();
+        if (userDoc.exists) {
+          final serverBalance = userDoc.data()?['balance'] as int? ?? _balance;
+          debugPrint('[BalanceProvider] _forceLoadBalance: Баланс из Firestore: $serverBalance');
+          
+          // Обновляем локальное состояние
+          _balance = serverBalance;
+          await _setAndVerifyBalance(_balance);
+          notifyListeners();
+        }
       } else {
         debugPrint('[BalanceProvider] _forceLoadBalance: Пользователь не авторизован, установка гостевого баланса');
         _balance = 3000;
         notifyListeners();
       }
     } catch (e) {
-      debugPrint('Ошибка при принудительной загрузке баланса: $e');
-      _balance = 3000;
+      debugPrint('[BalanceProvider] _forceLoadBalance: Ошибка при загрузке баланса: $e');
+      // При ошибке используем локальный баланс
+      final box = Hive.box<int>('balances');
+      final localBalance = box.get(_hiveBalanceKey);
+      if (localBalance != null) {
+        _balance = localBalance;
+        _hasUnsyncedLocalChanges = true;
+        debugPrint('[BalanceProvider] _forceLoadBalance: при ошибке установлен локальный баланс: $_balance');
+      } else {
+        _balance = 3000;
+      }
       notifyListeners();
+    } finally {
+      _isSyncingBalance = false;
     }
   }
 
@@ -344,13 +448,33 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
       if (currentUser != null) {
         debugPrint('Сохранение баланса для пользователя: \x1b[36m${currentUser.username}\x1b[0m');
         final connectivityResult = await Connectivity().checkConnectivity();
-        // СНАЧАЛА сохраняем баланс локально (Hive)
-        await _setAndVerifyBalance(_balance);
+        
         if (connectivityResult != ConnectivityResult.none) {
-          // ЕСЛИ есть интернет, пушим на сервер и сбрасываем флаг
-        await _authService.updateBalance(_balance);
+          _ignoreRemoteBalanceUpdate = true;
+          
+          try {
+            // Обновляем баланс в Firestore
+            await _firestore
+                .collection('users')
+                .doc(currentUser.uid)
+                .update({
+              'balance': _balance,
+              'lastUpdated': FieldValue.serverTimestamp(),
+            });
+            
+            _hasUnsyncedLocalChanges = false;
+            _justSynced = true;
+            debugPrint('[BalanceProvider] _saveBalance: баланс синхронизирован с сервером');
+          } finally {
+            // Сбрасываем флаги через 5 секунд
+            Future.delayed(const Duration(seconds: 5), () {
+              _ignoreRemoteBalanceUpdate = false;
+              _justSynced = false;
+            });
+          }
         } else {
-          debugPrint('Нет интернета, сохраняем баланс только локально (Hive)');
+          debugPrint('[BalanceProvider] _saveBalance: нет интернета, сохраняем баланс только локально (Hive)');
+          _hasUnsyncedLocalChanges = true;
         }
         debugPrint('Баланс сохранен локально (Hive): $_balance');
       } else {
@@ -363,57 +487,76 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
     }
   }
 
-  Future<void> addBalance(int amount) async {
+  void addBalance(int amount) {
     if (amount <= 0) return;
+
     final oldBalance = _balance;
     _balance += amount;
-    notifyListeners(); // Сразу обновляем UI
-    try {
-      await _saveBalance();
-      debugPrint('Баланс увеличен: $oldBalance -> $_balance');
-      _hasUnsyncedLocalChanges = true;
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult != ConnectivityResult.none) {
-        debugPrint('[BalanceProvider] addBalance: есть интернет, пушим sync');
-        syncLocalBalanceToServer();
+    
+    // Сразу сохраняем в Hive
+    final box = Hive.box<int>('balances');
+    box.put(_hiveBalanceKey, _balance);
+    _hasUnsyncedLocalChanges = true;
+    
+    notifyListeners(); // Обновляем UI
+    debugPrint('Баланс увеличен: $oldBalance -> $_balance');
+    
+    // Асинхронно синхронизируем с сервером если есть интернет
+    Future.microtask(() async {
+      try {
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none && !_isSyncingBalance) {
+          _isSyncingBalance = true;
+          try {
+            await _saveBalance();
+          } finally {
+            _isSyncingBalance = false;
+          }
+        }
+      } catch (e) {
+        debugPrint('Ошибка при синхронизации баланса: $e');
       }
-    } catch (e) {
-      _balance = oldBalance;
-      notifyListeners();
-      debugPrint('Ошибка при увеличении баланса: $e');
-      rethrow;
-    }
+    });
   }
 
-  Future<void> subtractBalance(int amount) async {
+  void subtractBalance(int amount) {
     if (amount <= 0 || _balance < amount) return;
+
     final oldBalance = _balance;
     _balance -= amount;
-    notifyListeners(); // Сразу обновляем UI
-    try {
-      await _saveBalance();
-      debugPrint('Баланс уменьшен: $oldBalance -> $_balance');
-      _hasUnsyncedLocalChanges = true;
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult != ConnectivityResult.none) {
-        debugPrint('[BalanceProvider] subtractBalance: есть интернет, пушим sync');
-        syncLocalBalanceToServer();
+    
+    // Сразу сохраняем в Hive
+    final box = Hive.box<int>('balances');
+    box.put(_hiveBalanceKey, _balance);
+    _hasUnsyncedLocalChanges = true;
+    
+    notifyListeners(); // Обновляем UI
+    debugPrint('Баланс уменьшен: $oldBalance -> $_balance');
+    
+    // Асинхронно синхронизируем с сервером если есть интернет
+    Future.microtask(() async {
+      try {
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none && !_isSyncingBalance) {
+          _isSyncingBalance = true;
+          try {
+            await _saveBalance();
+          } finally {
+            _isSyncingBalance = false;
+          }
+        }
+      } catch (e) {
+        debugPrint('Ошибка при синхронизации баланса: $e');
       }
-    } catch (e) {
-      _balance = oldBalance;
-      notifyListeners();
-      debugPrint('Ошибка при уменьшении баланса: $e');
-      rethrow;
-    }
+    });
   }
 
-  Future<void> updateBalance(int amount) async {
+  void updateBalance(int amount) {
     if (amount > 0) {
-      await addBalance(amount);
-    } else {
-      await subtractBalance(-amount);
+      addBalance(amount);
+    } else if (amount < 0) {
+      subtractBalance(-amount);
     }
-    // syncLocalBalanceToServer уже вызывается внутри add/subtract
   }
 
   Future<void> updateBalanceForUser() async {
@@ -526,10 +669,34 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.resumed) {
-      final connectivityResult = await Connectivity().checkConnectivity();
-      if (connectivityResult != ConnectivityResult.none) {
-        debugPrint('[BalanceProvider] AppLifecycleState.resumed: проверяем sync');
-        syncLocalBalanceToServer();
+      debugPrint('[BalanceProvider] AppLifecycleState.resumed: проверяем состояние');
+      
+      // Проверяем наличие локальных изменений
+      final box = Hive.box<int>('balances');
+      final localBalance = box.get(_hiveBalanceKey);
+      
+      if (localBalance != null && localBalance != _balance) {
+        _hasUnsyncedLocalChanges = true;
+        debugPrint('[BalanceProvider] AppLifecycleState.resumed: обнаружены локальные изменения, баланс: $localBalance');
+        
+        // Проверяем интернет
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none) {
+          debugPrint('[BalanceProvider] AppLifecycleState.resumed: есть интернет, синхронизируем локальный баланс');
+          await syncLocalBalanceToServer();
+        } else {
+          debugPrint('[BalanceProvider] AppLifecycleState.resumed: нет интернета, используем локальный баланс');
+          _balance = localBalance;
+          notifyListeners();
+        }
+      } else {
+        debugPrint('[BalanceProvider] AppLifecycleState.resumed: нет локальных изменений');
+        // Проверяем интернет
+        final connectivityResult = await Connectivity().checkConnectivity();
+        if (connectivityResult != ConnectivityResult.none) {
+          debugPrint('[BalanceProvider] AppLifecycleState.resumed: есть интернет, загружаем с сервера');
+          await _forceLoadBalance();
+        }
       }
     }
   }

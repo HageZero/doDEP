@@ -78,11 +78,12 @@ void main() async {
       providers: [
         ChangeNotifierProvider.value(value: authService),
         ChangeNotifierProxyProvider<AuthService, BalanceProvider>(
-          create: (context) => BalanceProvider(),
+          create: (context) => BalanceProvider(authService),
           update: (context, authService, previous) {
-            final provider = previous ?? BalanceProvider();
-            provider.updateAuthService(authService);
-            return provider;
+            if (previous == null) {
+              return BalanceProvider(authService);
+            }
+            return previous;
           },
         ),
         ChangeNotifierProxyProvider<AuthService, StyleProvider>(

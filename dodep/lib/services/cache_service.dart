@@ -4,14 +4,15 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 
 class CacheService {
   // static const String _balanceKey = 'user_balance'; // БАЛАНС НЕ ХРАНИТЬ ЗДЕСЬ!
   static const String _purchasedStylesKey = 'purchased_styles';
   static const String _selectedStyleKey = 'selected_style';
-  static const String _avatarKey = 'user_avatar';
-  static const String _lastSyncKey = 'last_sync_timestamp';
+  static const String _avatarKey = 'avatar';
   static const String _avatarLocalPathKey = 'avatar_local_path';
+  static const String _lastSyncTimestampKey = 'last_sync_timestamp';
   
   // ---
   // ВНИМАНИЕ: Методы для работы с балансом УДАЛЕНЫ! Используйте только BalanceProvider/Hive.
@@ -56,12 +57,12 @@ class CacheService {
 
   static Future<void> saveLastSyncTimestamp() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_lastSyncKey, DateTime.now().millisecondsSinceEpoch);
+    await prefs.setInt(_lastSyncTimestampKey, DateTime.now().millisecondsSinceEpoch);
   }
 
   static Future<DateTime?> getLastSyncTimestamp() async {
     final prefs = await SharedPreferences.getInstance();
-    final timestamp = prefs.getInt(_lastSyncKey);
+    final timestamp = prefs.getInt(_lastSyncTimestampKey);
     return timestamp != null ? DateTime.fromMillisecondsSinceEpoch(timestamp) : null;
   }
 
@@ -79,7 +80,7 @@ class CacheService {
     await prefs.remove(_purchasedStylesKey);
     await prefs.remove(_selectedStyleKey);
     await prefs.remove(_avatarKey);
-    await prefs.remove(_lastSyncKey);
+    await prefs.remove(_lastSyncTimestampKey);
   }
 
   static Future<void> saveAvatarLocalPath(String path) async {
@@ -90,5 +91,33 @@ class CacheService {
   static Future<String?> getAvatarLocalPath() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_avatarLocalPathKey);
+  }
+
+  static Future<void> clearAllCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_purchasedStylesKey);
+      await prefs.remove(_selectedStyleKey);
+      await prefs.remove(_avatarKey);
+      await prefs.remove(_avatarLocalPathKey);
+      await prefs.remove(_lastSyncTimestampKey);
+      
+      // Очищаем локальный файл аватара, если он существует
+      try {
+        final localPath = await getAvatarLocalPath();
+        if (localPath != null) {
+          final file = File(localPath);
+          if (await file.exists()) {
+            await file.delete();
+          }
+        }
+      } catch (e) {
+        debugPrint('Ошибка при удалении локального файла аватара: $e');
+      }
+      
+      debugPrint('Весь кэш успешно очищен');
+    } catch (e) {
+      debugPrint('Ошибка при очистке кэша: $e');
+    }
   }
 } 

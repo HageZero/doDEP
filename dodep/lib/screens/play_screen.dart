@@ -511,7 +511,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   void _checkWin() async {
-    debugPrint('[PlayScreen] _checkWin: текущий баланс: [33m${Provider.of<BalanceProvider>(context, listen: false).balance}[0m');
     if (_currentSymbols[0].name == _currentSymbols[1].name && 
         _currentSymbols[1].name == _currentSymbols[2].name) {
       
@@ -563,7 +562,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       // Обновляем баланс локально
       final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
       debugPrint('[PlayScreen] _checkWin: addBalance($winAmount)');
-      await balanceProvider.addBalance(winAmount);
+      balanceProvider.addBalance(winAmount);
       
       // Пытаемся обновить максимальный выигрыш в Firebase только если есть интернет
       if (!_isOffline) {
@@ -603,7 +602,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       // Обновляем баланс локально
       final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
       debugPrint('[PlayScreen] _checkWin: addBalance($winAmount)');
-      await balanceProvider.addBalance(winAmount);
+      balanceProvider.addBalance(winAmount);
       
       // Пытаемся обновить максимальный выигрыш в Firebase только если есть интернет
       if (!_isOffline) {
@@ -760,7 +759,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       try {
         if (!_isFreeSpin) {
           debugPrint('[PlayScreen] _spinReels: subtractBalance($_currentBet)');
-          await balanceProvider.subtractBalance(_currentBet);
+          balanceProvider.subtractBalance(_currentBet);
         }
       } catch (e) {
         debugPrint('Ошибка при уменьшении баланса: $e');

@@ -132,7 +132,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           if (!isBought) {
                             if (balanceProvider.balance >= style.price!) {
                               debugPrint('[ShopScreen] Покупка стиля: updateBalance(-${style.price!})');
-                              await balanceProvider.updateBalance(-(style.price!));
+                              balanceProvider.updateBalance(-(style.price!));
                               await Future.delayed(const Duration(milliseconds: 100));
                               if (!_isOffline) {
                                 final localSuccess = await styleProvider.buyStyle(style);
@@ -159,7 +159,7 @@ class _ShopScreenState extends State<ShopScreen> {
                                   }
                                 } else {
                                   // Если не удалось купить (например, баг), возвращаем баланс
-                                  await balanceProvider.updateBalance(style.price!);
+                                  balanceProvider.updateBalance(style.price!);
                                   if (mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
