@@ -178,19 +178,16 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
         return;
       }
       
-      if (localBalance != null && localBalance != _balance) {
-        debugPrint('[BalanceProvider] _onAuthStateChanged: обнаружены локальные изменения, баланс: $localBalance');
+      if (localBalance != null) {
+        debugPrint('[BalanceProvider] _onAuthStateChanged: обнаружен локальный баланс: $localBalance');
         _hasUnsyncedLocalChanges = true;
         _balance = localBalance;
         notifyListeners();
         
         // Синхронизируем локальный баланс с сервером
         await syncLocalBalanceToServer();
-        
-        // Ждем 1 секунду после синхронизации
-        await Future.delayed(const Duration(seconds: 1));
       } else {
-        debugPrint('[BalanceProvider] _onAuthStateChanged: нет локальных изменений, загружаем с сервера');
+        debugPrint('[BalanceProvider] _onAuthStateChanged: нет локального баланса, загружаем с сервера');
         await _forceLoadBalance();
       }
     } else {
@@ -267,9 +264,6 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
         'balance': _balance,
         'lastUpdated': FieldValue.serverTimestamp(),
       });
-
-      // Ждем 2 секунды после обновления в Firebase
-      await Future.delayed(const Duration(seconds: 2));
 
       _hasUnsyncedLocalChanges = false;
       _justSynced = true;
@@ -675,9 +669,11 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
       final box = Hive.box<int>('balances');
       final localBalance = box.get(_hiveBalanceKey);
       
-      if (localBalance != null && localBalance != _balance) {
+      if (localBalance != null) {
+        debugPrint('[BalanceProvider] AppLifecycleState.resumed: обнаружен локальный баланс: $localBalance');
         _hasUnsyncedLocalChanges = true;
-        debugPrint('[BalanceProvider] AppLifecycleState.resumed: обнаружены локальные изменения, баланс: $localBalance');
+        _balance = localBalance;
+        notifyListeners();
         
         // Проверяем интернет
         final connectivityResult = await Connectivity().checkConnectivity();
@@ -686,11 +682,9 @@ class BalanceProvider with ChangeNotifier, WidgetsBindingObserver {
           await syncLocalBalanceToServer();
         } else {
           debugPrint('[BalanceProvider] AppLifecycleState.resumed: нет интернета, используем локальный баланс');
-          _balance = localBalance;
-          notifyListeners();
         }
       } else {
-        debugPrint('[BalanceProvider] AppLifecycleState.resumed: нет локальных изменений');
+        debugPrint('[BalanceProvider] AppLifecycleState.resumed: нет локального баланса');
         // Проверяем интернет
         final connectivityResult = await Connectivity().checkConnectivity();
         if (connectivityResult != ConnectivityResult.none) {
