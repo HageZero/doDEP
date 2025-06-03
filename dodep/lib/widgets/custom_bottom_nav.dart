@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../providers/style_provider.dart';
 import 'package:provider/provider.dart';
+import 'dart:math';
 
 class CustomBottomNav extends StatelessWidget {
   final int selectedIndex;
@@ -53,6 +54,10 @@ class CustomBottomNav extends StatelessWidget {
         primaryColor = isDark ? Colors.red : Colors.pink;
         secondaryColor = isDark ? Colors.pink : Colors.red;
         break;
+      case 'hellokitty':
+        primaryColor = isDark ? Color(0xFFFF69B4) : Color(0xFFFFB6C1); // Hello Kitty Pink
+        secondaryColor = isDark ? Color(0xFFFFB6C1) : Color(0xFFFF69B4); // Light Pink
+        break;
       default: // classic
         primaryColor = isDark ? Colors.deepPurple : Colors.purple;
         secondaryColor = isDark ? Colors.purple : Colors.pink;
@@ -60,64 +65,95 @@ class CustomBottomNav extends StatelessWidget {
     
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  context,
-                  'assets/images/shop_icon.png',
-                  'assets/images/shop_icon.png',
-                  0,
-                  isDark,
-                  primaryColor,
-                  secondaryColor,
-                ),
-                _buildNavItem(
-                  context,
-                  'assets/images/slots_icon.png',
-                  'assets/images/slots_icon.png',
-                  1,
-                  isDark,
-                  primaryColor,
-                  secondaryColor,
-                ),
-                _buildNavItem(
-                  context,
-                  'assets/images/style_icon.png',
-                  'assets/images/style_icon.png',
-                  2,
-                  isDark,
-                  primaryColor,
-                  secondaryColor,
-                ),
-                _buildNavItem(
-                  context,
-                  'assets/images/profile_icon.png',
-                  'assets/images/profile_icon.png',
-                  3,
-                  isDark,
-                  primaryColor,
-                  secondaryColor,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildNavItem(
+                      context,
+                      'assets/images/shop_icon.png',
+                      'assets/images/shop_icon.png',
+                      0,
+                      isDark,
+                      primaryColor,
+                      secondaryColor,
+                    ),
+                    _buildNavItem(
+                      context,
+                      'assets/images/slots_icon.png',
+                      'assets/images/slots_icon.png',
+                      1,
+                      isDark,
+                      primaryColor,
+                      secondaryColor,
+                    ),
+                    _buildNavItem(
+                      context,
+                      'assets/images/style_icon.png',
+                      'assets/images/style_icon.png',
+                      2,
+                      isDark,
+                      primaryColor,
+                      secondaryColor,
+                    ),
+                    _buildNavItem(
+                      context,
+                      'assets/images/profile_icon.png',
+                      'assets/images/profile_icon.png',
+                      3,
+                      isDark,
+                      primaryColor,
+                      secondaryColor,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-        ),
+          if (currentStyle.id == 'minecraft')
+            Positioned(
+              top: -50,
+              right: -20,
+              child: Transform(
+                alignment: Alignment.center,
+                transform: Matrix4.rotationY(pi),
+                child: Image.asset(
+                  'assets/images/ghast.png',
+                  width: 80,
+                  height: 80,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+          if (currentStyle.id == 'minecraft')
+            Positioned(
+              top: 45,
+              right: 325,
+              child: Image.asset(
+                'assets/images/earth.png',
+                width: 50,
+                height: 50,
+                fit: BoxFit.contain,
+              ),
+            ),
+        ],
       ),
     );
   }

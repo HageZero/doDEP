@@ -8,7 +8,6 @@ import '../models/slot_symbol.dart';
 import 'dart:math'; // Для генерации случайных чисел
 import 'dart:async';
 import 'package:collection/collection.dart'; // Для shuffle
-import 'package:confetti/confetti.dart'; // Импортируем пакет confetti
 import 'package:flutter/rendering.dart';
 import 'dart:ui'; // Добавляем импорт для ImageFilter
 import 'package:shared_preferences/shared_preferences.dart';
@@ -30,6 +29,7 @@ class PlayScreen extends StatefulWidget {
 class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   late List<SlotSymbol> _symbols;
   late List<SlotSymbol> _currentSymbols;
+  late StyleProvider _styleProvider;
 
   final Random _random = Random();
   bool _isSpinning = false;
@@ -41,7 +41,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   late Animation<double> _pulseAnimation;
   late AnimationController _rotationAnimationController;
   late Animation<double> _rotationAnimation;
-  late ConfettiController _confettiController;
   int _spinCost = 50;
 
   late List<List<SlotSymbol>> _reelSymbols;
@@ -84,37 +83,28 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   bool _isOffline = false;
 
+  bool _wasAddBalanceNotificationVisible = false;
+  AudioPlayer? _depaAudioPlayer;
+
   @override
   void initState() {
     super.initState();
-    _updateSymbols();
-    _currentSymbols = List.generate(3, (_) => _symbols[0]);
-    _reelSymbols = List.generate(3, (_) => List.generate(_reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]));
-    
-    // Инициализация контроллеров анимации
+    _balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
     _spinAnimationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     );
 
     _winAnimationController = AnimationController(
-      duration: const Duration(seconds: 3),
+      duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
 
     _pulseAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000),
       vsync: this,
     )..repeat(reverse: true);
 
-    _rotationAnimationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
-
-    _confettiController = ConfettiController(duration: const Duration(seconds: 5));
-
-    // Инициализация анимаций
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.2,
@@ -123,6 +113,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     ));
 
+    _rotationAnimationController = AnimationController(
+      duration: const Duration(seconds: 2),
+      vsync: this,
+    );
+
     _rotationAnimation = Tween<double>(
       begin: 0.0,
       end: 0.1,
@@ -130,6 +125,22 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       parent: _rotationAnimationController,
       curve: Curves.easeInOut,
     ));
+
+    _reelAnimations = List.generate(3, (index) {
+      return Tween<double>(
+        begin: 0.0,
+        end: (_reelLength - 3).toDouble(),
+      ).animate(
+        CurvedAnimation(
+          parent: _spinAnimationController,
+          curve: Interval(
+            index * 0.2,
+            (index + 1) * 0.2,
+            curve: Curves.easeInOut,
+          ),
+        ),
+      );
+    });
 
     _winAnimations = List.generate(3, (index) {
       return Tween<double>(
@@ -195,45 +206,60 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _balanceProvider = Provider.of<BalanceProvider>(context);
-    _updateSymbols();
-    _updateSystemUI();
-    _initializeReelAnimations();
-
-    // Подписка на изменения стиля
-    final styleProvider = Provider.of<StyleProvider>(context);
-    styleProvider.addListener(_onStyleChanged);
+    _styleProvider = Provider.of<StyleProvider>(context, listen: false);
+    _styleProvider.addListener(_onStyleChanged);
   }
 
   void _onStyleChanged() {
+    if (!mounted) return;
+    
+    // Используем Future.microtask для отложенного обновления
+    Future.microtask(() {
+      if (!mounted) return;
+      _updateSymbols();
+    });
+  }
+
+  void _updateSymbols() {
+    if (!mounted) return;
+    
+    final selectedStyle = _styleProvider.selectedStyleId;
+
+    List<SlotSymbol> newSymbols;
+    switch (selectedStyle) {
+      case 'minecraft':
+        newSymbols = SlotSymbols.minecraft;
+        break;
+      case 'yamete':
+        newSymbols = SlotSymbols.yamete;
+        break;
+      case 'hellokitty':
+        newSymbols = SlotSymbols.hellokitty;
+        break;
+      case 'dresnya':
+        newSymbols = SlotSymbols.dresnya;
+        break;
+      default:
+        newSymbols = SlotSymbols.classic;
+    }
+
     if (mounted) {
       setState(() {
-        _updateSymbols();
+        _symbols = newSymbols;
+        _currentSymbols = [
+          _symbols[0],
+          _symbols[0],
+          _symbols[0],
+        ];
+        _reelSymbols = List.generate(3, (_) => 
+          List.generate(_reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]));
       });
     }
   }
 
-  void _initializeReelAnimations() {
+  void _updateSystemUI() {
     if (!mounted) return;
     
-    _reelAnimations = List.generate(3, (index) {
-      return Tween<double>(
-        begin: 0.0,
-        end: (_reelLength - 3).toDouble(),
-      ).animate(
-        CurvedAnimation(
-          parent: _spinAnimationController,
-          curve: Interval(
-            index * 0.2,
-            (index + 1) * 0.2,
-            curve: Curves.easeInOut,
-          ),
-        ),
-      );
-    });
-  }
-
-  void _updateSystemUI() {
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
@@ -247,60 +273,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             : Brightness.dark,
       ),
     );
-  }
-
-  void _updateSymbols() {
-    try {
-      final styleProvider = Provider.of<StyleProvider>(context, listen: false);
-      final selectedStyle = styleProvider.selectedStyleId;
-
-      List<SlotSymbol> newSymbols;
-      switch (selectedStyle) {
-        case 'minecraft':
-          newSymbols = SlotSymbols.minecraft;
-          break;
-        case 'fantasy_gacha':
-          newSymbols = SlotSymbols.fantasyGacha;
-          break;
-        case 'dresnya':
-          newSymbols = SlotSymbols.dresnya;
-          break;
-        case 'tokyopuk':
-          newSymbols = SlotSymbols.tokyopuk;
-          break;
-        case 'lego':
-          newSymbols = SlotSymbols.lego;
-          break;
-        case 'doka3':
-          newSymbols = SlotSymbols.doka3;
-          break;
-        case 'yamete':
-          newSymbols = SlotSymbols.yamete;
-          break;
-        case 'classic':
-        default:
-          newSymbols = SlotSymbols.classic;
-          break;
-      }
-
-      // Проверяем, что у нас есть все необходимые символы
-      if (newSymbols.isEmpty || newSymbols.length < 3) {
-        debugPrint('Ошибка: недостаточно символов для стиля $selectedStyle, используем классические символы');
-        newSymbols = SlotSymbols.classic;
-      }
-
-      setState(() {
-        _symbols = newSymbols;
-      });
-      
-      debugPrint('Загружены символы для стиля: $selectedStyle');
-    } catch (e) {
-      debugPrint('Ошибка при загрузке символов: $e');
-      // В случае ошибки используем классические символы
-      setState(() {
-        _symbols = SlotSymbols.classic;
-      });
-    }
   }
 
   Future<void> _loadDodepState() async {
@@ -557,7 +529,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       
       _winAnimationController.forward(from: 0.0);
       _rotationAnimationController.repeat(reverse: true);
-      _confettiController.play();
       
       // Обновляем баланс локально
       final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
@@ -697,15 +668,35 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final rubinSymbol = _symbols.firstWhere((s) => s.name == 'rubin', orElse: () => _symbols[0]);
     final bonusSymbol = _symbols.firstWhere((s) => s.name == 'bonus', orElse: () => _symbols[0]);
 
-    if (randomValue < 0.015) {
-      nextSymbols = [bonusSymbol, bonusSymbol, bonusSymbol];
-    } else if (randomValue < 0.04) {
-      nextSymbols = [sevenSymbol, sevenSymbol, sevenSymbol];
-    } else if (randomValue < 0.07) {
-      nextSymbols = [emeraldSymbol, emeraldSymbol, emeraldSymbol];
-    } else if (randomValue < 0.12) {
-      nextSymbols = [rubinSymbol, rubinSymbol, rubinSymbol];
-    } else if (randomValue < 0.32) {
+    // Список обычных символов (без специальных)
+    final regularSymbols = _symbols.where((s) => 
+      s.name != 'seven' && 
+      s.name != 'emerald' && 
+      s.name != 'rubin' && 
+      s.name != 'bonus'
+    ).toList();
+
+    if (randomValue < 0.25) {
+      // 25% шанс на три одинаковых символа
+      if (randomValue < 0.03) {
+        // 3% от общего шанса на бонус
+        nextSymbols = [bonusSymbol, bonusSymbol, bonusSymbol];
+      } else if (randomValue < 0.06) {
+        // 3% от общего шанса на изумруд
+        nextSymbols = [emeraldSymbol, emeraldSymbol, emeraldSymbol];
+      } else if (randomValue < 0.09) {
+        // 3% от общего шанса на семерку
+        nextSymbols = [sevenSymbol, sevenSymbol, sevenSymbol];
+      } else if (randomValue < 0.12) {
+        // 3% от общего шанса на рубин
+        nextSymbols = [rubinSymbol, rubinSymbol, rubinSymbol];
+      } else {
+        // 13% от общего шанса на любые три одинаковых обычных символа
+        SlotSymbol randomSymbol = regularSymbols[_random.nextInt(regularSymbols.length)];
+        nextSymbols = [randomSymbol, randomSymbol, randomSymbol];
+      }
+    } else if (randomValue < 0.45) {
+      // 20% шанс на два одинаковых символа
       SlotSymbol symbol1 = _symbols[_random.nextInt(_symbols.length)];
       SlotSymbol symbol2;
       do {
@@ -714,6 +705,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       nextSymbols = [symbol1, symbol1, symbol2];
       nextSymbols.shuffle(_random);
     } else {
+      // 55% шанс на три разных символа
       List<SlotSymbol> tempSymbols = List.from(_symbols);
       tempSymbols.shuffle(_random);
       nextSymbols = tempSymbols.sublist(0, min(3, tempSymbols.length));
@@ -933,6 +925,16 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildAddBalanceNotification(BuildContext context) {
+    // Звук только при первом появлении уведомления и лимите 3/3
+    if (_isNotificationVisible && !_wasAddBalanceNotificationVisible && _dodepCount >= 3) {
+      _depaAudioPlayer?.stop();
+      _depaAudioPlayer = AudioPlayer();
+      _depaAudioPlayer!.play(AssetSource('sounds/depai.mp3'));
+    } else if (!_isNotificationVisible && _wasAddBalanceNotificationVisible) {
+      _depaAudioPlayer?.stop();
+    }
+    _wasAddBalanceNotificationVisible = _isNotificationVisible;
+
     return Positioned.fill(
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 300),
@@ -1046,6 +1048,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildReel(int index) {
+    final isMinecraft = _styleProvider.selectedStyleId == 'minecraft';
     if (_showFinal) {
       return AnimatedBuilder(
         animation: _isBigWin ? _pulseAnimation : _winAnimations[index],
@@ -1079,7 +1082,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(10.0),
                   child: Stack(
                     children: [
-                      if (Provider.of<StyleProvider>(context, listen: false).selectedStyleId == 'slotstyle5')
+                      if (isMinecraft)
                         Image.asset(
                           'assets/images/minecraftslot.png',
                           width: 80,
@@ -1143,7 +1146,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
               height: 80,
               child: Stack(
                 children: [
-                  if (Provider.of<StyleProvider>(context, listen: false).selectedStyleId == 'slotstyle5')
+                  if (isMinecraft)
                     Image.asset(
                       'assets/images/minecraftslot.png',
                       width: 80,
@@ -1190,7 +1193,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final balanceProvider = Provider.of<BalanceProvider>(context);
-    debugPrint('[PlayScreen] build: текущий баланс: [33m${balanceProvider.balance}[0m');
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
@@ -1463,13 +1465,17 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _pulseAnimationController.dispose();
     _rotationAnimationController.stop();
     _rotationAnimationController.dispose();
-    _confettiController.dispose();
     _balanceProvider.removeListener(_checkBalanceForNotification);
     _saveDodepState();
     _audioPlayer.dispose();
     _autoSpinTimer?.cancel();
-    final styleProvider = Provider.of<StyleProvider>(context, listen: false);
-    styleProvider.removeListener(_onStyleChanged);
+    
+    // Отписываемся от StyleProvider перед удалением виджета
+    _styleProvider.removeListener(_onStyleChanged);
+    
+    _depaAudioPlayer?.stop();
+    _depaAudioPlayer?.dispose();
+    
     super.dispose();
   }
 } 

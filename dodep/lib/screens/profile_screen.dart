@@ -16,6 +16,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/cache_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import '../providers/style_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -337,6 +338,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authService = Provider.of<AuthService>(context);
     final currentUser = authService.getCurrentUserSync();
     final languageProvider = Provider.of<LanguageProvider>(context);
+    final styleProvider = Provider.of<StyleProvider>(context);
+    final currentStyle = styleProvider.getStyleById(styleProvider.selectedStyleId);
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -474,7 +477,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
                   title: Text(
-                        'Изменить аватар',
+                    'Изменить аватарку',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       color: Theme.of(context).colorScheme.onSurface,
                     ),
@@ -482,6 +485,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   onTap: _pickImage,
                 ),
               ),
+              if (currentStyle.id == 'minecraft')
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Center(
+                    child: Image.asset(
+                      'assets/images/nether.png',
+                      width: 400,
+                      height: 300,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

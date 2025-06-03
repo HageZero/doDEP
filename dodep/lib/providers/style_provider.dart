@@ -39,6 +39,7 @@ class StyleProvider extends ChangeNotifier {
     SlotStyle(id: 'minecraft', name: 'Майнкрафт', imageAsset: 'assets/images/minecraftstyle.png', price: 3800),
     SlotStyle(id: 'doka3', name: 'Дока 3', imageAsset: 'assets/images/doka3style.png', price: 7000),
     SlotStyle(id: 'yamete', name: 'Ямете кудасай', imageAsset: 'assets/images/japanstyle.png', price: 2500),
+    SlotStyle(id: 'hellokitty', name: 'Hello Kitty', imageAsset: 'assets/images/hellokittystyle.png', price: 5000),
   ];
 
   List<String> _boughtStyleIds = ['classic']; // Список ID купленных стилей, по умолчанию есть 'classic'

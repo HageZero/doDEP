@@ -12,6 +12,8 @@ import 'providers/language_provider.dart';
 import 'theme/app_theme.dart';
 import 'themes/minecraft_theme.dart';
 import 'themes/yamete_theme.dart';
+import 'themes/hellokitty_theme.dart';
+import 'themes/dresnya_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_screen.dart';
@@ -122,6 +124,14 @@ class MyApp extends StatelessWidget {
             lightTheme = YameteTheme.lightTheme;
             darkTheme = YameteTheme.darkTheme;
             break;
+          case 'hellokitty':
+            lightTheme = HelloKittyTheme.lightTheme;
+            darkTheme = HelloKittyTheme.darkTheme;
+            break;
+          case 'dresnya':
+            lightTheme = DresnyaTheme.lightTheme;
+            darkTheme = DresnyaTheme.darkTheme;
+            break;
           default:
             lightTheme = AppTheme.lightTheme;
             darkTheme = AppTheme.darkTheme;
@@ -132,11 +142,57 @@ class MyApp extends StatelessWidget {
           appBarTheme: lightTheme.appBarTheme.copyWith(
             systemOverlayStyle: SystemUiOverlayStyle.dark,
           ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: lightTheme.colorScheme.surface,
+            indicatorColor: lightTheme.colorScheme.primaryContainer,
+            labelTextStyle: MaterialStateProperty.all(
+              TextStyle(
+                color: lightTheme.colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            iconTheme: MaterialStateProperty.resolveWith((states) {
+              if (states.contains(MaterialState.selected)) {
+                return IconThemeData(
+                  color: lightTheme.colorScheme.primary,
+                  size: 24,
+                );
+              }
+              return IconThemeData(
+                color: lightTheme.colorScheme.onSurface.withOpacity(0.7),
+                size: 24,
+              );
+            }),
+          ),
         );
 
         darkTheme = darkTheme.copyWith(
           appBarTheme: darkTheme.appBarTheme.copyWith(
             systemOverlayStyle: SystemUiOverlayStyle.light,
+          ),
+          navigationBarTheme: NavigationBarThemeData(
+            backgroundColor: darkTheme.colorScheme.surface,
+            indicatorColor: darkTheme.colorScheme.primaryContainer,
+            labelTextStyle: MaterialStateProperty.all(
+              TextStyle(
+                color: darkTheme.colorScheme.onSurface,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            iconTheme: MaterialStateProperty.resolveWith((states) {
+              if (states.contains(MaterialState.selected)) {
+                return IconThemeData(
+                  color: darkTheme.colorScheme.primary,
+                  size: 24,
+                );
+              }
+              return IconThemeData(
+                color: darkTheme.colorScheme.onSurface.withOpacity(0.7),
+                size: 24,
+              );
+            }),
           ),
         );
 

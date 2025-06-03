@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../themes/yamete_theme.dart';
+import '../themes/hellokitty_theme.dart';
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'is_dark_mode';
@@ -20,6 +21,9 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get currentTheme {
     if (_currentStyleTheme == 'yamete') {
       return _isDarkMode ? YameteTheme.darkTheme : YameteTheme.lightTheme;
+    }
+    if (_currentStyleTheme == 'hellokitty') {
+      return _isDarkMode ? HelloKittyTheme.darkTheme : HelloKittyTheme.lightTheme;
     }
     // Возвращаем стандартную тему для других стилей
     return _isDarkMode ? ThemeData.dark(useMaterial3: true) : ThemeData.light(useMaterial3: true);
@@ -53,7 +57,13 @@ class ThemeProvider extends ChangeNotifier {
 
   Future<void> setStyleTheme(String styleId) async {
     try {
-      _currentStyleTheme = styleId == 'yamete' ? 'yamete' : 'default';
+      if (styleId == 'yamete') {
+        _currentStyleTheme = 'yamete';
+      } else if (styleId == 'hellokitty') {
+        _currentStyleTheme = 'hellokitty';
+      } else {
+        _currentStyleTheme = 'default';
+      }
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_styleThemeKey, _currentStyleTheme);
       notifyListeners();
