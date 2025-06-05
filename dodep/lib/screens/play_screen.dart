@@ -239,6 +239,18 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       case 'dresnya':
         newSymbols = SlotSymbols.dresnya;
         break;
+      case 'doka3':
+        newSymbols = SlotSymbols.doka3;
+        break;
+      case 'lego':
+        newSymbols = SlotSymbols.lego;
+        break;
+      case 'tokyopuk':
+        newSymbols = SlotSymbols.tokyopuk;
+        break;
+      case 'fantasyGacha':
+        newSymbols = SlotSymbols.fantasyGacha;
+        break;
       default:
         newSymbols = SlotSymbols.classic;
     }
@@ -659,44 +671,15 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     });
 
     // Генерируем случайные символы
-    double randomValue = _random.nextDouble();
+    final randomValue = _random.nextDouble();
     List<SlotSymbol> nextSymbols = [];
 
-    // Определяем специальные символы
-    final sevenSymbol = _symbols.firstWhere((s) => s.name == 'seven', orElse: () => _symbols[0]);
-    final emeraldSymbol = _symbols.firstWhere((s) => s.name == 'emerald', orElse: () => _symbols[0]);
-    final rubinSymbol = _symbols.firstWhere((s) => s.name == 'rubin', orElse: () => _symbols[0]);
-    final bonusSymbol = _symbols.firstWhere((s) => s.name == 'bonus', orElse: () => _symbols[0]);
-
-    // Список обычных символов (без специальных)
-    final regularSymbols = _symbols.where((s) => 
-      s.name != 'seven' && 
-      s.name != 'emerald' && 
-      s.name != 'rubin' && 
-      s.name != 'bonus'
-    ).toList();
-
-    if (randomValue < 0.25) {
-      // 25% шанс на три одинаковых символа
-      if (randomValue < 0.03) {
-        // 3% от общего шанса на бонус
-        nextSymbols = [bonusSymbol, bonusSymbol, bonusSymbol];
-      } else if (randomValue < 0.06) {
-        // 3% от общего шанса на изумруд
-        nextSymbols = [emeraldSymbol, emeraldSymbol, emeraldSymbol];
-      } else if (randomValue < 0.09) {
-        // 3% от общего шанса на семерку
-        nextSymbols = [sevenSymbol, sevenSymbol, sevenSymbol];
-      } else if (randomValue < 0.12) {
-        // 3% от общего шанса на рубин
-        nextSymbols = [rubinSymbol, rubinSymbol, rubinSymbol];
-      } else {
-        // 13% от общего шанса на любые три одинаковых обычных символа
-        SlotSymbol randomSymbol = regularSymbols[_random.nextInt(regularSymbols.length)];
-        nextSymbols = [randomSymbol, randomSymbol, randomSymbol];
-      }
-    } else if (randomValue < 0.45) {
-      // 20% шанс на два одинаковых символа
+    if (randomValue < 0.15) {
+      // 15% шанс на три одинаковых символа
+      SlotSymbol randomSymbol = _symbols[_random.nextInt(_symbols.length)];
+      nextSymbols = [randomSymbol, randomSymbol, randomSymbol];
+    } else if (randomValue < 0.35) {
+      // 35% шанс на два одинаковых символа
       SlotSymbol symbol1 = _symbols[_random.nextInt(_symbols.length)];
       SlotSymbol symbol2;
       do {
@@ -705,7 +688,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       nextSymbols = [symbol1, symbol1, symbol2];
       nextSymbols.shuffle(_random);
     } else {
-      // 55% шанс на три разных символа
+      // 50% шанс на три разных символа
       List<SlotSymbol> tempSymbols = List.from(_symbols);
       tempSymbols.shuffle(_random);
       nextSymbols = tempSymbols.sublist(0, min(3, tempSymbols.length));
@@ -925,8 +908,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildAddBalanceNotification(BuildContext context) {
-    // Звук только при первом появлении уведомления и лимите 3/3
-    if (_isNotificationVisible && !_wasAddBalanceNotificationVisible && _dodepCount >= 3) {
+    // Звук при первом появлении уведомления
+    if (_isNotificationVisible && !_wasAddBalanceNotificationVisible && _dodepCount == 0) {
       _depaAudioPlayer?.stop();
       _depaAudioPlayer = AudioPlayer();
       _depaAudioPlayer!.play(AssetSource('sounds/depai.mp3'));
@@ -1201,229 +1184,267 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       extendBodyBehindAppBar: true,
             body: SafeArea(
         bottom: false,
-              child: Padding(
-          padding: EdgeInsets.only(bottom: bottomPadding),
-                child: Column(
-                  children: [
-              Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Stack(
+                children: [
+                  if (_styleProvider.selectedStyleId == 'yamete')
+                    Positioned(
+                      left: -58,
+                      top: 50,
+                      child: IgnorePointer(
+                        child: Image.asset(
+                          'assets/images/lantern.png',
+                          height: 250,
+                          width: 250,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                    ),
+                  Padding(
+                    padding: EdgeInsets.only(bottom: bottomPadding),
+                    child: Column(
                       children: [
-                        Text(
-                          'Казик',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onBackground,
-                            fontWeight: FontWeight.bold,
+                        Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (_styleProvider.selectedStyleId == 'yamete')
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                                  decoration: BoxDecoration(
+                                    color: Color(0xFF2C2C2C),
+                                    borderRadius: BorderRadius.circular(12.0),
+                                    border: Border.all(
+                                      color: Color(0xFF404040),
+                                      width: 2.0,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Казик',
+                                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  'Казик',
+                                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.onBackground,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).colorScheme.primaryContainer,
+                                      borderRadius: BorderRadius.circular(20.0),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                          blurRadius: 4,
+                                          spreadRadius: 1,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Consumer<BalanceProvider>(
+                                      builder: (context, balanceProvider, _) =>
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Image.asset(
+                                              'assets/images/emerald.png',
+                                              height: 24,
+                                              width: 24,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              '${balanceProvider.balance}',
+                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                    ),
+                                  ),
+                                  if (_isFreeSpin) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.tertiaryContainer,
+                                        borderRadius: BorderRadius.circular(20.0),
+                                      ),
+                                      child: Text(
+                                        'Бесплатные прокрутки: $_freeSpins',
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                  if (_dodepTimerText.isNotEmpty && _dodepCount > 0) ...[
+                                    const SizedBox(height: 4),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.tertiaryContainer,
+                                        borderRadius: BorderRadius.circular(20.0),
+                                      ),
+                                      child: Text(
+                                        _dodepTimerText,
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: Theme.of(context).colorScheme.onTertiaryContainer,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ],
                           ),
                         ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
+                        Expanded(
+                          child: Stack(
+                            children: [
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_showWinMessage)
+                          AnimatedOpacity(
+                            duration: const Duration(milliseconds: 500),
+                            opacity: _showWinMessage ? 1.0 : 0.0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                _winMessage ?? '',
+                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 20),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primaryContainer,
+                                color: Theme.of(context).colorScheme.secondaryContainer,
                                 borderRadius: BorderRadius.circular(20.0),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                    color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
                                     blurRadius: 4,
                                     spreadRadius: 1,
                                   ),
                                 ],
                               ),
-                              child: Consumer<BalanceProvider>(
-                                builder: (context, balanceProvider, _) =>
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Image.asset(
-                                        'assets/images/emerald.png',
-                                        height: 24,
-                                        width: 24,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        '${balanceProvider.balance}',
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                              child: Text(
+                                'Ставка: $_currentBet',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                            if (_isFreeSpin) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(20.0),
+                            const SizedBox(height: 10),
+                              SizedBox(
+                                height: 100,
+                                child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(3, (index) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: _buildReel(index),
+                      )),
                                 ),
-                                child: Text(
-                                  'Бесплатные прокрутки: $_freeSpins',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onTertiaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                            ),
+                            const SizedBox(height: 30),
+                            ElevatedButton(
+                              onPressed: (_isSpinning || _winAnimationController.isAnimating || _isFreeSpin) 
+                                  ? null 
+                                  : _spinReels,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                elevation: 4,
+                              ),
+                              child: Text(
+                                _isSpinning 
+                                    ? 'Крутится...' 
+                                    : _isFreeSpin 
+                                        ? 'Бесплатные прокрутки' 
+                                        : 'Крутить! (${_currentBet})',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
-                            ],
-                            if (_dodepTimerText.isNotEmpty && _dodepCount > 0) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.tertiaryContainer,
-                                  borderRadius: BorderRadius.circular(20.0),
+                            ),
+                            const SizedBox(height: 12),
+                            ElevatedButton(
+                              onPressed: (_isFreeSpin || balanceProvider.balance <= 0) 
+                                  ? null 
+                                  : _showDepositDialog,
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: Text(
-                                  _dodepTimerText,
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onTertiaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                                elevation: 4,
+                                backgroundColor: (_isFreeSpin || balanceProvider.balance <= 0)
+                                    ? Theme.of(context).colorScheme.surfaceVariant
+                                    : Theme.of(context).colorScheme.primaryContainer,
+                              ),
+                              child: Text(
+                                'Депнуть',
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: (_isFreeSpin || balanceProvider.balance <= 0)
+                                      ? Theme.of(context).colorScheme.onSurfaceVariant
+                                      : Theme.of(context).colorScheme.onPrimaryContainer,
                                 ),
                               ),
-                            ],
-                          ],
+                            ),
+                              const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+                  if (_showAddBalanceNotification)
+                    _buildAddBalanceNotification(context),
+                  if (_showSadHorse)
+                    _buildSadHorseAnimation(),
+                ],
+                          ),
                         ),
                       ],
                     ),
+                  ),
+                ],
               ),
-              Expanded(
-                child: Stack(
-                  children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (_showWinMessage)
-                  AnimatedOpacity(
-                    duration: const Duration(milliseconds: 500),
-                    opacity: _showWinMessage ? 1.0 : 0.0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                            blurRadius: 8,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        _winMessage ?? '',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        borderRadius: BorderRadius.circular(20.0),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                            blurRadius: 4,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        'Ставка: $_currentBet',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSecondaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                ),
-                const SizedBox(height: 10),
-                          SizedBox(
-                            height: 100,
-                            child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(3, (index) => Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                    child: _buildReel(index),
-                  )),
-                            ),
-                ),
-                const SizedBox(height: 30),
-                ElevatedButton(
-                  onPressed: (_isSpinning || _winAnimationController.isAnimating || _isFreeSpin) 
-                      ? null 
-                      : _spinReels,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 4,
-                  ),
-                  child: Text(
-                    _isSpinning 
-                        ? 'Крутится...' 
-                        : _isFreeSpin 
-                            ? 'Бесплатные прокрутки' 
-                            : 'Крутить! (${_currentBet})',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: (_isFreeSpin || balanceProvider.balance <= 0) 
-                      ? null 
-                      : _showDepositDialog,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    elevation: 4,
-                    backgroundColor: (_isFreeSpin || balanceProvider.balance <= 0)
-                        ? Theme.of(context).colorScheme.surfaceVariant
-                        : Theme.of(context).colorScheme.primaryContainer,
-                  ),
-                  child: Text(
-                    'Депнуть',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: (_isFreeSpin || balanceProvider.balance <= 0)
-                          ? Theme.of(context).colorScheme.onSurfaceVariant
-                          : Theme.of(context).colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-                          const SizedBox(height: 16),
-              ],
             ),
-          ),
-          if (_showAddBalanceNotification)
-            _buildAddBalanceNotification(context),
-          if (_showSadHorse)
-            _buildSadHorseAnimation(),
-        ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

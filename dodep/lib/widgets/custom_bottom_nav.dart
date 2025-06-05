@@ -39,16 +39,16 @@ class CustomBottomNav extends StatelessWidget {
         secondaryColor = isDark ? Colors.red : Colors.pink;
         break;
       case 'lego':
-        primaryColor = isDark ? Colors.blue : Colors.lightBlue;
-        secondaryColor = isDark ? Colors.lightBlue : Colors.blue;
+        primaryColor = isDark ? Color(0xFF0055BF) : Color(0xFFE31837); // Синий для темной темы, красный для светлой
+        secondaryColor = isDark ? Color(0xFF71C5CF) : Color(0xFFFFD700); // Светло-синий для темной темы, желтый для светлой
         break;
       case 'minecraft':
         primaryColor = isDark ? Colors.green : Colors.lightGreen;
         secondaryColor = isDark ? Colors.lightGreen : Colors.green;
         break;
       case 'doka3':
-        primaryColor = isDark ? Colors.teal : Colors.cyan;
-        secondaryColor = isDark ? Colors.cyan : Colors.teal;
+        primaryColor = isDark ? Color(0xFFC23C2A) : Color(0xFF4CAF50); // Красный для темной темы, зеленый для светлой
+        secondaryColor = isDark ? Color(0xFF8B0000) : Color(0xFF81C784); // Темно-красный для темной темы, светло-зеленый для светлой
         break;
       case 'yamete':
         primaryColor = isDark ? Colors.red : Colors.pink;
@@ -131,6 +131,7 @@ class CustomBottomNav extends StatelessWidget {
             Positioned(
               top: -50,
               right: -20,
+              child: IgnorePointer(
               child: Transform(
                 alignment: Alignment.center,
                 transform: Matrix4.rotationY(pi),
@@ -139,6 +140,7 @@ class CustomBottomNav extends StatelessWidget {
                   width: 80,
                   height: 80,
                   fit: BoxFit.contain,
+                  ),
                 ),
               ),
             ),
@@ -146,11 +148,129 @@ class CustomBottomNav extends StatelessWidget {
             Positioned(
               top: 45,
               right: 325,
-              child: Image.asset(
-                'assets/images/earth.png',
-                width: 50,
-                height: 50,
-                fit: BoxFit.contain,
+              child: IgnorePointer(
+                child: Image.asset(
+                  'assets/images/earth.png',
+                  width: 50,
+                  height: 50,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'doka3')
+            Positioned(
+              top: 0,
+              right: -32,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationX(pi),
+                  child: Image.asset(
+                    'assets/images/desolator.png',
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'doka3' && !isDark)
+            Positioned(
+              top: -35,
+              right: 110,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity(),
+                  child: Image.asset(
+                    'assets/images/blade.png',
+                    width: 130,
+                    height: 130,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'doka3' && isDark)
+            Positioned(
+              top: -40,
+              right: 121,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity(),
+                  child: Image.asset(
+                    'assets/images/agan.png',
+                    width: 120,
+                    height: 120,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'doka3')
+            Positioned(
+              top: -30,
+              right: 295,
+              child: IgnorePointer(
+                child: Image.asset(
+                  'assets/images/hex.png',
+                  width: 100,
+                  height: 100,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'yamete')
+            Positioned(
+              top: -25,
+              right: 65,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationZ(30 * pi / 180),
+                  child: Image.asset(
+                    'assets/images/sakuraflower.png',
+                    width: 50,
+                    height: 50,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'yamete')
+            Positioned(
+              top: -15, 
+              left: 50,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationZ(90 * pi / 180),
+                  child: Image.asset(
+                    'assets/images/sakuraflower.png',
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'yamete')
+            Positioned(
+              top: 55, 
+              right: 36,
+              left: 0,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.rotationZ(-10 * pi / 180),
+                  child: Image.asset(
+                    'assets/images/sakuraflower.png',
+                    width: 35,
+                    height: 35,
+                    fit: BoxFit.contain,
+                  ),
+                ),
               ),
             ),
         ],

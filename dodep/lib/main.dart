@@ -14,6 +14,8 @@ import 'themes/minecraft_theme.dart';
 import 'themes/yamete_theme.dart';
 import 'themes/hellokitty_theme.dart';
 import 'themes/dresnya_theme.dart';
+import 'themes/doka3_theme.dart';
+import 'themes/lego_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_screen.dart';
@@ -23,6 +25,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'dart:async';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -104,8 +108,75 @@ void main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Timer? _noDepTimer;
+  int? _lastBalance;
+  AudioPlayer? _noDepAudioPlayer;
+  DateTime? _lastBalanceChange;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final balanceProvider = Provider.of<BalanceProvider>(context);
+    balanceProvider.removeListener(_onBalanceChanged); // avoid duplicate listeners
+    balanceProvider.addListener(_onBalanceChanged);
+    _onBalanceChanged(); // initial check
+  }
+
+  void _onBalanceChanged() {
+    final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    final balance = balanceProvider.balance;
+    if (_lastBalance != balance) {
+      _lastBalanceChange = DateTime.now();
+      _lastBalance = balance;
+      _noDepTimer?.cancel();
+      _noDepAudioPlayer?.stop();
+      if (balance == 0) {
+        _noDepTimer = Timer(const Duration(seconds: 90), () {
+          final now = DateTime.now();
+          if (balanceProvider.balance == 0 && _lastBalanceChange != null && now.difference(_lastBalanceChange!) >= const Duration(seconds: 90)) {
+            _noDepAudioPlayer?.stop();
+            _noDepAudioPlayer = AudioPlayer();
+            _noDepAudioPlayer!.play(AssetSource('sounds/nodep.mp3'));
+          }
+        });
+      }
+    }
+    // Если баланс 0 и таймер не запущен (например, при старте)
+    if (balance == 0 && _noDepTimer == null) {
+      _noDepTimer = Timer(const Duration(seconds: 90), () {
+        final now = DateTime.now();
+        if (balanceProvider.balance == 0 && _lastBalanceChange != null && now.difference(_lastBalanceChange!) >= const Duration(seconds: 90)) {
+          _noDepAudioPlayer?.stop();
+          _noDepAudioPlayer = AudioPlayer();
+          _noDepAudioPlayer!.play(AssetSource('sounds/nodep.mp3'));
+        }
+      });
+    }
+    // Если баланс > 0, сбрасываем всё
+    if (balance > 0) {
+      _noDepTimer?.cancel();
+      _noDepTimer = null;
+      _noDepAudioPlayer?.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _noDepTimer?.cancel();
+    _noDepAudioPlayer?.stop();
+    _noDepAudioPlayer?.dispose();
+    final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    balanceProvider.removeListener(_onBalanceChanged);
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,6 +202,14 @@ class MyApp extends StatelessWidget {
           case 'dresnya':
             lightTheme = DresnyaTheme.lightTheme;
             darkTheme = DresnyaTheme.darkTheme;
+            break;
+          case 'doka3':
+            lightTheme = Doka3Theme.lightTheme;
+            darkTheme = Doka3Theme.darkTheme;
+            break;
+          case 'lego':
+            lightTheme = LegoTheme.lightTheme;
+            darkTheme = LegoTheme.darkTheme;
             break;
           default:
             lightTheme = AppTheme.lightTheme;
