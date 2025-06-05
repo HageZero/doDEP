@@ -211,6 +211,10 @@ class _MyAppState extends State<MyApp> {
             lightTheme = LegoTheme.lightTheme;
             darkTheme = LegoTheme.darkTheme;
             break;
+          case 'tokyopuk':
+            lightTheme = LegoTheme.lightTheme;
+            darkTheme = LegoTheme.darkTheme;
+            break;
           default:
             lightTheme = AppTheme.lightTheme;
             darkTheme = AppTheme.darkTheme;

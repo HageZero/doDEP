@@ -28,7 +28,6 @@ class MinecraftTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
-          side: BorderSide(color: Color(0xFF8B4513), width: 2),
         ),
         color: Color(0xFFDEB887),
       ),
@@ -39,7 +38,6 @@ class MinecraftTheme {
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: const BorderSide(color: Color(0xFFA0522D), width: 2),
           ),
         ),
       ),
@@ -52,7 +50,6 @@ class MinecraftTheme {
         backgroundColor: Color(0xFFDEB887),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
-          side: BorderSide(color: Color(0xFF8B4513), width: 2),
         ),
       ),
       snackBarTheme: const SnackBarThemeData(
@@ -98,7 +95,6 @@ class MinecraftTheme {
         elevation: 4,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
-          side: BorderSide(color: Color(0xFF8B7355), width: 2),
         ),
         color: Color(0xFF3E2723),
       ),
@@ -109,7 +105,6 @@ class MinecraftTheme {
           elevation: 4,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: const BorderSide(color: Color(0xFF8B7355), width: 2),
           ),
         ),
       ),
@@ -122,7 +117,6 @@ class MinecraftTheme {
         backgroundColor: Color(0xFF3E2723),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(8)),
-          side: BorderSide(color: Color(0xFF8B7355), width: 2),
         ),
       ),
       snackBarTheme: const SnackBarThemeData(

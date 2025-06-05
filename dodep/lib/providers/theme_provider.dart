@@ -30,6 +30,8 @@ class ThemeProvider extends ChangeNotifier {
         return _isDarkMode ? Doka3Theme.darkTheme : Doka3Theme.lightTheme;
       case 'lego':
         return _isDarkMode ? LegoTheme.darkTheme : LegoTheme.lightTheme;
+      case 'tokyopuk':
+        return _isDarkMode ? LegoTheme.darkTheme : LegoTheme.lightTheme;
       default:
         return _isDarkMode ? ThemeData.dark(useMaterial3: true) : ThemeData.light(useMaterial3: true);
     }
