@@ -9,6 +9,7 @@ import 'providers/theme_provider.dart';
 import 'providers/balance_provider.dart';
 import 'providers/style_provider.dart';
 import 'providers/language_provider.dart';
+import 'providers/quests_provider.dart';
 import 'theme/app_theme.dart';
 import 'themes/minecraft_theme.dart';
 import 'themes/yamete_theme.dart';
@@ -16,6 +17,7 @@ import 'themes/hellokitty_theme.dart';
 import 'themes/dresnya_theme.dart';
 import 'themes/doka3_theme.dart';
 import 'themes/lego_theme.dart';
+import 'themes/tokyopuk_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_screen.dart';
@@ -102,6 +104,7 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(create: (_) => QuestsProvider()),
       ],
       child: const MyApp(),
     ),
@@ -212,8 +215,8 @@ class _MyAppState extends State<MyApp> {
             darkTheme = LegoTheme.darkTheme;
             break;
           case 'tokyopuk':
-            lightTheme = LegoTheme.lightTheme;
-            darkTheme = LegoTheme.darkTheme;
+            lightTheme = TokyoGhoulTheme.lightTheme;
+            darkTheme = TokyoGhoulTheme.darkTheme;
             break;
           default:
             lightTheme = AppTheme.lightTheme;

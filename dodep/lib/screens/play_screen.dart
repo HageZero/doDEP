@@ -4,6 +4,7 @@ import '../providers/balance_provider.dart';
 import '../providers/style_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/slot_reel.dart'; // Импортируем виджет барабана
+import '../widgets/daily_quests_dialog.dart';
 import '../models/slot_symbol.dart';
 import 'dart:math'; // Для генерации случайных чисел
 import 'dart:async';
@@ -15,6 +16,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../providers/quests_provider.dart';
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({Key? key}) : super(key: key);
@@ -43,7 +45,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   late Animation<double> _rotationAnimation;
   int _spinCost = 50;
 
-  late List<List<SlotSymbol>> _reelSymbols;
+  late List<List<SlotSymbol>> _reelSymbols = List.generate(3, (_) => []);
 
   bool _showFinal = false;
   static const int _reelLength = 20;
@@ -85,6 +87,15 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   bool _wasAddBalanceNotificationVisible = false;
   AudioPlayer? _depaAudioPlayer;
+
+  // Для подсчёта подряд проигрышей и подряд "lucky"
+  int _loseStreak = 0;
+  int _luckyStreak = 0;
+
+  // Добавить счетчик для подряд проигрышей
+  int _loseQuestProgress = 0;
+
+  bool _isBonusFreeSpins = false;
 
   @override
   void initState() {
@@ -472,6 +483,18 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     setState(() {
       _freeSpins = 10;
       _isFreeSpin = true;
+      _isBonusFreeSpins = false;
+      PlayScreen.isFreeSpinNotifier.value = true;
+    });
+    _startAutoSpin();
+  }
+
+  void _startBonusFreeSpins() {
+    setState(() {
+      _currentBet = 50;
+      _freeSpins = 10;
+      _isFreeSpin = true;
+      _isBonusFreeSpins = true;
       PlayScreen.isFreeSpinNotifier.value = true;
     });
     _startAutoSpin();
@@ -495,6 +518,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   void _checkWin() async {
+    final questsProvider = Provider.of<QuestsProvider>(context, listen: false);
     if (_currentSymbols[0].name == _currentSymbols[1].name && 
         _currentSymbols[1].name == _currentSymbols[2].name) {
       
@@ -524,6 +548,23 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           });
           _startAutoSpin();
         }
+
+        // bigwin
+        if (_winAmount > 500) {
+          questsProvider.updateQuestProgress('bigwin', 1);
+        }
+
+        // Сбросить прогресс задания lose
+        _loseQuestProgress = 0;
+        questsProvider.updateQuestProgress('lose', 0, absolute: true);
+        _luckyStreak = 0;
+
+        if (_isFreeSpin && _isBonusFreeSpins && _winAmount > 0) {
+          setState(() {
+            _currentBet += 50;
+          });
+        }
+
         return;
       }
 
@@ -546,6 +587,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
       debugPrint('[PlayScreen] _checkWin: addBalance($winAmount)');
       balanceProvider.addBalance(winAmount);
+
+      // Обновляем прогресс заданий
+      questsProvider.updateQuestProgress('coins', winAmount);
+      questsProvider.updateQuestProgress('jackpots', 1);
       
       // Пытаемся обновить максимальный выигрыш в Firebase только если есть интернет
       if (!_isOffline) {
@@ -569,6 +614,21 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           });
         }
       });
+
+      // bigwin
+      if (_winAmount > 500) {
+        questsProvider.updateQuestProgress('bigwin', 1);
+      }
+
+      // Сбросить прогресс задания lose
+      _loseQuestProgress = 0;
+      questsProvider.updateQuestProgress('lose', 0, absolute: true);
+
+      if (_isFreeSpin && _isBonusFreeSpins && _winAmount > 0) {
+        setState(() {
+          _currentBet += 50;
+        });
+      }
     } else if (_currentSymbols[0].name == _currentSymbols[1].name || 
                _currentSymbols[1].name == _currentSymbols[2].name || 
                _currentSymbols[0].name == _currentSymbols[2].name) {
@@ -586,6 +646,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
       debugPrint('[PlayScreen] _checkWin: addBalance($winAmount)');
       balanceProvider.addBalance(winAmount);
+
+      // Обновляем прогресс заданий
+      questsProvider.updateQuestProgress('coins', winAmount);
       
       // Пытаемся обновить максимальный выигрыш в Firebase только если есть интернет
       if (!_isOffline) {
@@ -608,6 +671,22 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           });
         }
       });
+
+      _luckyStreak++;
+      if (_luckyStreak >= 2) {
+        questsProvider.updateQuestProgress('lucky', 1);
+        _luckyStreak = 0;
+      }
+
+      // Сбросить прогресс задания lose
+      _loseQuestProgress = 0;
+      questsProvider.updateQuestProgress('lose', 0, absolute: true);
+
+      if (_isFreeSpin && _isBonusFreeSpins && _winAmount > 0) {
+        setState(() {
+          _currentBet += 50;
+        });
+      }
     } else {
       setState(() {
         _isWin = false;
@@ -615,6 +694,16 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         _showWinMessage = false;
         _isBigWin = false;
       });
+
+      _loseStreak++;
+      if (_loseStreak >= 5) {
+        questsProvider.updateQuestProgress('lose', 1);
+        _loseStreak = 0;
+      }
+
+      // Сбросить прогресс задания lose
+      _loseQuestProgress++;
+      questsProvider.updateQuestProgress('lose', _loseQuestProgress, absolute: true);
     }
 
     // Если это была бесплатная прокрутка (и не бонусная комбинация), уменьшаем счетчик и запускаем следующую
@@ -626,15 +715,32 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       });
       _startAutoSpin();
     }
+
+    // После окончания бесплатных прокруток:
+    if (_isFreeSpin && _freeSpins == 0 && _isBonusFreeSpins) {
+      setState(() {
+        _isBonusFreeSpins = false;
+        _currentBet = 50;
+      });
+    }
   }
 
   void _spinReels() {
     final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    final questsProvider = Provider.of<QuestsProvider>(context, listen: false);
     debugPrint('[PlayScreen] _spinReels: текущий баланс: [33m${balanceProvider.balance}[0m');
     if (_isSpinning) return;
     if (!_isFreeSpin && balanceProvider.balance < _currentBet) {
       _checkBalanceForNotification();
       return;
+    }
+
+    // Обновляем прогресс задания на прокрутки
+    questsProvider.updateQuestProgress('spins', 1);
+
+    // Обновляем прогресс задания на ставку
+    if (!_isFreeSpin) {
+      questsProvider.updateQuestProgress('bet', _currentBet);
     }
 
     // Проверяем и инициализируем символы, если они еще не инициализированы
@@ -674,8 +780,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     final randomValue = _random.nextDouble();
     List<SlotSymbol> nextSymbols = [];
 
-    if (randomValue < 0.15) {
-      // 15% шанс на три одинаковых символа
+    if (randomValue < 0.2) {
+      // 20% шанс на три одинаковых символа
       SlotSymbol randomSymbol = _symbols[_random.nextInt(_symbols.length)];
       nextSymbols = [randomSymbol, randomSymbol, randomSymbol];
     } else if (randomValue < 0.35) {
@@ -688,7 +794,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       nextSymbols = [symbol1, symbol1, symbol2];
       nextSymbols.shuffle(_random);
     } else {
-      // 50% шанс на три разных символа
+      // 45% шанс на три разных символа
       List<SlotSymbol> tempSymbols = List.from(_symbols);
       tempSymbols.shuffle(_random);
       nextSymbols = tempSymbols.sublist(0, min(3, tempSymbols.length));
@@ -1274,40 +1380,68 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                                         ),
                                     ),
                                   ),
-                                  if (_isFreeSpin) ...[
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.tertiaryContainer,
-                                        borderRadius: BorderRadius.circular(20.0),
-                                      ),
-                                      child: Text(
-                                        'Бесплатные прокрутки: $_freeSpins',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onTertiaryContainer,
-                                          fontWeight: FontWeight.bold,
+                                  const SizedBox(height: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => DailyQuestsDialog(onBonus: _startBonusFreeSpins),
+                                      );
+                                    },
+                                    child: Stack(
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(3),
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context).colorScheme.surface,
+                                            borderRadius: BorderRadius.circular(18),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                                blurRadius: 8,
+                                                spreadRadius: 2,
+                                              ),
+                                            ],
+                                          ),
+                                          child: Image.asset(
+                                            'assets/images/dailyquests.png',
+                                            width: 65,
+                                            height: 65,
+                                          ),
                                         ),
-                                      ),
-                                    ),
-                                  ],
-                                  if (_dodepTimerText.isNotEmpty && _dodepCount > 0) ...[
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.tertiaryContainer,
-                                        borderRadius: BorderRadius.circular(20.0),
-                                      ),
-                                      child: Text(
-                                        _dodepTimerText,
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: Theme.of(context).colorScheme.onTertiaryContainer,
-                                          fontWeight: FontWeight.bold,
+                                        Consumer<QuestsProvider>(
+                                          builder: (context, questsProvider, _) {
+                                            if (questsProvider.hasCompletedQuests) {
+                                              return Positioned(
+                                                right: 0,
+                                                top: 0,
+                                                child: Container(
+                                                  width: 12,
+                                                  height: 12,
+                                                  decoration: BoxDecoration(
+                                                    color: Theme.of(context).colorScheme.primary,
+                                                    shape: BoxShape.circle,
+                                                    border: Border.all(
+                                                      color: Theme.of(context).colorScheme.surface,
+                                                      width: 2,
+                                                    ),
+                                                    boxShadow: [
+                                                      BoxShadow(
+                                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                                        blurRadius: 4,
+                                                        spreadRadius: 1,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            }
+                                            return const SizedBox.shrink();
+                                          },
                                         ),
-                                      ),
+                                      ],
                                     ),
-                                  ],
+                                  ),
                                 ],
                               ),
                             ],
@@ -1436,6 +1570,58 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     _buildAddBalanceNotification(context),
                   if (_showSadHorse)
                     _buildSadHorseAnimation(),
+                  if (_dodepTimerText.isNotEmpty && _dodepCount > 0)
+                    Positioned(
+                      top: 0,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(20.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.tertiary.withOpacity(0.2),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _dodepTimerText,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onTertiaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_isFreeSpin)
+                    Positioned(
+                      top: (_dodepTimerText.isNotEmpty && _dodepCount > 0) ? 40 : 0,
+                      right: 16,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.tertiaryContainer,
+                          borderRadius: BorderRadius.circular(20.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.tertiary.withOpacity(0.2),
+                              blurRadius: 6,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'Бесплатные прокрутки: $_freeSpins',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onTertiaryContainer,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
                           ),
                         ),

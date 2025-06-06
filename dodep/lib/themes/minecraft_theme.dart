@@ -65,6 +65,55 @@ class MinecraftTheme {
         elevation: 4,
       ),
       scaffoldBackgroundColor: const Color(0xFFF5DEB3),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF2F1810),
+        ),
+      ).apply(
+        fontFamily: 'Inter',
+      ),
     );
   }
 
@@ -132,6 +181,55 @@ class MinecraftTheme {
         elevation: 4,
       ),
       scaffoldBackgroundColor: const Color(0xFF2F1810),
+      textTheme: TextTheme(
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFE6D5AC),
+        ),
+      ).apply(
+        fontFamily: 'Inter',
+      ),
     );
   }
 } 

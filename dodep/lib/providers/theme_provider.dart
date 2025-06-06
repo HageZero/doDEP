@@ -4,6 +4,7 @@ import '../themes/yamete_theme.dart';
 import '../themes/hellokitty_theme.dart';
 import '../themes/doka3_theme.dart';
 import '../themes/lego_theme.dart';
+import '../themes/tokyopuk_theme.dart';
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'is_dark_mode';
@@ -31,7 +32,7 @@ class ThemeProvider extends ChangeNotifier {
       case 'lego':
         return _isDarkMode ? LegoTheme.darkTheme : LegoTheme.lightTheme;
       case 'tokyopuk':
-        return _isDarkMode ? LegoTheme.darkTheme : LegoTheme.lightTheme;
+        return _isDarkMode ? TokyoGhoulTheme.darkTheme : TokyoGhoulTheme.lightTheme;
       default:
         return _isDarkMode ? ThemeData.dark(useMaterial3: true) : ThemeData.light(useMaterial3: true);
     }

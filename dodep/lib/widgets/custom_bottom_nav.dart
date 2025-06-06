@@ -35,8 +35,8 @@ class CustomBottomNav extends StatelessWidget {
         secondaryColor = isDark ? Colors.deepOrange : Colors.orange;
         break;
       case 'tokyopuk':
-        primaryColor = isDark ? Colors.pink : Colors.red;
-        secondaryColor = isDark ? Colors.red : Colors.pink;
+        primaryColor = isDark ? Color(0xFF1A1A1A) : Color(0xFFB22222); // ghoulEye для темной темы, kaguneRed для светлой
+        secondaryColor = isDark ? Color(0xFF1E1E1E) : Color(0xFFE31B23); // darkBlood для темной темы, bloodRed для светлой
         break;
       case 'lego':
         primaryColor = isDark ? Color(0xFF0055BF) : Color(0xFFE31837); // Синий для темной темы, красный для светлой
@@ -70,7 +70,13 @@ class CustomBottomNav extends StatelessWidget {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: currentStyle.id == 'doka3' 
+                  ? Color(0xFF2A2A2A) // dotaMenuGray
+                  : currentStyle.id == 'tokyopuk'
+                      ? isDark
+                          ? Color(0xFF8B0000) // darkSurface
+                          : Color(0xFF1A1A1A) // lightSurface
+                      : colorScheme.surface,
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
@@ -268,6 +274,23 @@ class CustomBottomNav extends StatelessWidget {
                     'assets/images/sakuraflower.png',
                     width: 35,
                     height: 35,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'tokyopuk')
+            Positioned(
+              top: -15, 
+              right: -40,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity(),
+                  child: Image.asset(
+                    'assets/images/centipede.png',
+                    width: 110,
+                    height: 110,
                     fit: BoxFit.contain,
                   ),
                 ),
