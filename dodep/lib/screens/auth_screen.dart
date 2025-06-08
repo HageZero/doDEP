@@ -4,6 +4,7 @@ import '../providers/theme_provider.dart';
 import '../services/auth_service.dart';
 import '../themes/minecraft_theme.dart';
 import 'package:flutter/services.dart';
+import '../widgets/app_scaffold.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({super.key});
@@ -124,8 +125,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return AppScaffold(
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16.0),

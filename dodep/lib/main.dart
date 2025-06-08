@@ -18,11 +18,13 @@ import 'themes/dresnya_theme.dart';
 import 'themes/doka3_theme.dart';
 import 'themes/lego_theme.dart';
 import 'themes/tokyopuk_theme.dart';
+import 'themes/fantasygacha_theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/auth_service.dart';
 import 'utils/global_keys.dart';
+import 'widgets/app_scaffold.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -218,6 +220,10 @@ class _MyAppState extends State<MyApp> {
             lightTheme = TokyoGhoulTheme.lightTheme;
             darkTheme = TokyoGhoulTheme.darkTheme;
             break;
+          case 'fantasy_gacha':
+            lightTheme = FantasyGachaTheme.lightTheme;
+            darkTheme = FantasyGachaTheme.darkTheme;
+            break;
           default:
             lightTheme = AppTheme.lightTheme;
             darkTheme = AppTheme.darkTheme;
@@ -246,7 +252,7 @@ class _MyAppState extends State<MyApp> {
                 );
               }
               return IconThemeData(
-                color: lightTheme.colorScheme.onSurface.withOpacity(0.7),
+                color: lightTheme.colorScheme.onSurface,
                 size: 24,
               );
             }),
@@ -275,7 +281,7 @@ class _MyAppState extends State<MyApp> {
                 );
               }
               return IconThemeData(
-                color: darkTheme.colorScheme.onSurface.withOpacity(0.7),
+                color: darkTheme.colorScheme.onSurface,
                 size: 24,
               );
             }),
@@ -288,7 +294,12 @@ class _MyAppState extends State<MyApp> {
           theme: lightTheme,
           darkTheme: darkTheme,
           themeMode: themeProvider.themeMode,
-          home: const SplashScreen(),
+          builder: (context, child) {
+            return AppScaffold(
+              body: child!,
+            );
+          },
+          home: SplashScreen(),
           routes: {
             '/auth': (context) => const AuthScreen(),
             '/main': (context) => const MainScreen(),

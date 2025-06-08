@@ -27,8 +27,8 @@ class CustomBottomNav extends StatelessWidget {
     
     switch (currentStyle.id) {
       case 'fantasy_gacha':
-        primaryColor = isDark ? Colors.deepPurple : Colors.purple;
-        secondaryColor = isDark ? Colors.purple : Colors.pink;
+        primaryColor = isDark ? Color(0xFF20B2AA) : Color(0xFF008B8B);
+        secondaryColor = isDark ? Color(0xFFE0FFFF) : Color(0xFF006666);
         break;
       case 'dresnya':
         primaryColor = isDark ? Colors.orange : Colors.deepOrange;
@@ -291,6 +291,57 @@ class CustomBottomNav extends StatelessWidget {
                     'assets/images/centipede.png',
                     width: 110,
                     height: 110,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'fantasy_gacha' && isDark)
+            Positioned(
+              top: -20,
+              right: 121,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity(),
+                  child: Image.asset(
+                    'assets/images/sword2.png',
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'fantasy_gacha' && !isDark)
+            Positioned(
+              top: -20,
+              right: 121,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity(),
+                  child: Image.asset(
+                    'assets/images/sword.png',
+                    width: 110,
+                    height: 110,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+            if (currentStyle.id == 'fantasy_gacha')
+            Positioned(
+              top: -70, 
+              right: -10,
+              child: IgnorePointer(
+                child: Transform(
+                  alignment: Alignment.center,
+                  transform: Matrix4.identity(),
+                  child: Image.asset(
+                    'assets/images/cat.png',
+                    width: 80,
+                    height: 80,
                     fit: BoxFit.contain,
                   ),
                 ),

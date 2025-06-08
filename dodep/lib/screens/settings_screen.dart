@@ -5,6 +5,7 @@ import 'package:video_player/video_player.dart';
 import '../providers/theme_provider.dart';
 import '../providers/language_provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/app_scaffold.dart';
 import 'dart:ui';
 
 class SettingsScreen extends StatefulWidget {
@@ -124,8 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
 
     return WillPopScope(
       onWillPop: _onWillPop,
-      child: Scaffold(
-        backgroundColor: Theme.of(context).colorScheme.background,
+      child: AppScaffold(
         body: Stack(
           children: [
             // Основное содержимое экрана настроек
@@ -248,9 +248,9 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                               fontWeight: FontWeight.bold,
                               shadows: [
                                 Shadow(
-                                  color: Theme.of(context).colorScheme.primary,
-                                  blurRadius: 10,
+                                  color: Colors.black.withOpacity(0.5),
                                   offset: const Offset(2, 2),
+                                  blurRadius: 4,
                                 ),
                               ],
                             ),
@@ -263,29 +263,12 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               ),
 
             // Видео поверх всего
-            if (languageProvider.showVideo && _videoController.value.isInitialized)
+            if (languageProvider.showVideo)
               Positioned.fill(
                 child: Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: MediaQuery.of(context).size.width * 0.8,
-                      height: MediaQuery.of(context).size.width * 0.8,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: AspectRatio(
-                        aspectRatio: 1,
-                        child: VideoPlayer(_videoController),
-                      ),
-                    ),
+                  child: AspectRatio(
+                    aspectRatio: _videoController.value.aspectRatio,
+                    child: VideoPlayer(_videoController),
                   ),
                 ),
               ),

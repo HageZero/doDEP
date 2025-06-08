@@ -12,6 +12,7 @@ import '../models/app_user.dart';
 import 'settings_screen.dart';
 import '../providers/balance_provider.dart';
 import '../widgets/success_animation.dart';
+import '../widgets/app_scaffold.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '../services/cache_service.dart';
 import 'package:http/http.dart' as http;
@@ -327,182 +328,172 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Добавляем слушатель изменения темы
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    if (themeProvider != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _updateSystemUI();
-      });
-    }
-
     final authService = Provider.of<AuthService>(context);
     final currentUser = authService.getCurrentUserSync();
     final languageProvider = Provider.of<LanguageProvider>(context);
     final styleProvider = Provider.of<StyleProvider>(context);
-    final currentStyle = styleProvider.getStyleById(styleProvider.selectedStyleId);
+    final selectedStyle = styleProvider.getStyleById(styleProvider.selectedStyleId);
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.background,
+    return AppScaffold(
       body: Stack(
         children: [
           SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Заголовок и кнопка настроек в одной строке
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Профиль',
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onBackground,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                          blurRadius: 8,
-                          spreadRadius: 1,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Профиль',
+                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                            color: Theme.of(context).colorScheme.onBackground,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                                blurRadius: 8,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.all(12.0),
+                                child: Icon(
+                                  Icons.settings,
+                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                          );
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
-                          child: Icon(
-                            Icons.settings,
-                            color: Theme.of(context).colorScheme.onPrimaryContainer,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-              // Аватар и имя пользователя
-              Center(
-                child: Column(
-                  children: [
-                    Consumer<AuthService>(
-                      builder: (context, authService, _) {
-                        final avatarPath = authService.getCurrentUserSync()?.avatarPath;
-                        if (_hasInternet == true && avatarPath != null && avatarPath.startsWith('http')) {
-                          return CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            child: ClipOval(
-                              child: Image.network(
-                                avatarPath,
-                                key: ValueKey(avatarPath),
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Center(child: CircularProgressIndicator());
-                                },
-                                errorBuilder: (context, error, stackTrace) {
-                                  if (_localAvatarPath != null) {
-                                    return Image.file(
-                                      File(_localAvatarPath!),
+                    // Аватар и имя пользователя
+                    Center(
+                      child: Column(
+                        children: [
+                          Consumer<AuthService>(
+                            builder: (context, authService, _) {
+                              final avatarPath = authService.getCurrentUserSync()?.avatarPath;
+                              if (_hasInternet == true && avatarPath != null && avatarPath.startsWith('http')) {
+                                return CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                  child: ClipOval(
+                                    child: Image.network(
+                                      avatarPath,
+                                      key: ValueKey(avatarPath),
                                       width: 100,
                                       height: 100,
                                       fit: BoxFit.cover,
-                                    );
-                                  }
-                                  return Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer);
-                                },
-                              ),
-                            ),
-                          );
-                        } else if (_localAvatarPath != null) {
-                          return CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            backgroundImage: FileImage(File(_localAvatarPath!)),
-                          );
-                        } else {
-                          return CircleAvatar(
-                            radius: 50,
-                            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                            child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer),
-                          );
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Consumer<AuthService>(
-                      builder: (context, authService, _) {
-                        final user = authService.getCurrentUserSync();
-                        return Text(
-                          user?.username ?? 'Загрузка...',
-                          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onBackground,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return Center(child: CircularProgressIndicator());
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        if (_localAvatarPath != null) {
+                                          return Image.file(
+                                            File(_localAvatarPath!),
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          );
+                                        }
+                                        return Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              } else if (_localAvatarPath != null) {
+                                return CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                  backgroundImage: FileImage(File(_localAvatarPath!)),
+                                );
+                              } else {
+                                return CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                  child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                );
+                              }
+                            },
                           ),
-                        );
-                      },
+                          const SizedBox(height: 16),
+                          Consumer<AuthService>(
+                            builder: (context, authService, _) {
+                              final user = authService.getCurrentUserSync();
+                              return Text(
+                                user?.username ?? 'Загрузка...',
+                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                  color: Theme.of(context).colorScheme.onBackground,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
                     ),
+                    const SizedBox(height: 32),
+
+                    // Кнопка редактирования профиля
+                    Card(
+                      elevation: 2,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.edit,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(
+                          'Изменить аватарку',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface,
+                          ),
+                        ),
+                        onTap: _pickImage,
+                      ),
+                    ),
+                    if (selectedStyle.id == 'minecraft')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: Center(
+                          child: Image.asset(
+                            'assets/images/nether.png',
+                            width: 400,
+                            height: 300,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
-              const SizedBox(height: 32),
-
-              // Кнопка редактирования профиля
-              Card(
-                elevation: 2,
-                color: Theme.of(context).colorScheme.surface,
-                child: ListTile(
-                  leading: Icon(
-                    Icons.edit,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  title: Text(
-                    'Изменить аватарку',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                  onTap: _pickImage,
-                ),
-              ),
-              if (currentStyle.id == 'minecraft')
-                Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Center(
-                    child: Image.asset(
-                      'assets/images/nether.png',
-                      width: 400,
-                      height: 300,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
-          ),
-
-          // Анимация успеха
           if (_showSuccessAnimation)
             Container(
               color: Colors.black.withOpacity(0.5),

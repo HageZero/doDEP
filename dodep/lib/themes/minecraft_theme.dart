@@ -12,7 +12,7 @@ class MinecraftTheme {
         error: const Color(0xFF8B0000), // Темно-красный
         onError: const Color(0xFFFFF8DC),
         background: const Color(0xFFF5DEB3), // Светлый песочный фон
-        onBackground: const Color(0xFF2F1810),
+        onBackground: const Color(0xFFE6BE8A),
         surface: const Color(0xFFDEB887), // Светло-коричневая поверхность
         onSurface: const Color(0xFF2F1810),
         primaryContainer: const Color(0xFFA0522D), // Контейнер цвета земли

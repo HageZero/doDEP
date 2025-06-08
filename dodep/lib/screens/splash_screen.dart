@@ -11,6 +11,7 @@ import 'auth_screen.dart';
 import '../services/auth_service.dart';
 import 'package:flutter/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../widgets/app_scaffold.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -348,13 +349,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final isDark = themeProvider.isDarkMode;
-    final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
-    debugPrint('[SplashScreen] build: текущий баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
-
-    return Scaffold(
-      extendBodyBehindAppBar: true,
+    return AppScaffold(
       body: Stack(
         children: [
           // Фоновый градиент
@@ -363,7 +358,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: isDark ? [
+                colors: Theme.of(context).brightness == Brightness.dark ? [
                   Theme.of(context).colorScheme.primary.withOpacity(0.8),
                   Theme.of(context).colorScheme.primary.withOpacity(0.6),
                   Theme.of(context).colorScheme.primary.withOpacity(0.7),
@@ -422,17 +417,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                                             child: Text(
                                               'Депаем шекели...',
                                               style: TextStyle(
-                                                color: isDark 
-                                                    ? Colors.white.withOpacity(0.9)
-                                                    : Theme.of(context).colorScheme.primary.withOpacity(0.9),
-                                          fontSize: 28,
+                                                color: Theme.of(context).brightness == Brightness.dark ? Colors.white.withOpacity(0.9) : Theme.of(context).colorScheme.primary.withOpacity(0.9),
+                                                fontSize: 28,
                                                 fontWeight: FontWeight.w600,
                                                 letterSpacing: 0.5,
                                                 shadows: [
                                                   Shadow(
-                                                    color: isDark 
-                                                        ? Colors.black.withOpacity(0.3)
-                                                        : Colors.white.withOpacity(0.3),
+                                                    color: Theme.of(context).brightness == Brightness.dark ? Colors.black.withOpacity(0.3) : Colors.white.withOpacity(0.3),
                                                     offset: const Offset(0, 2),
                                                     blurRadius: 4,
                                                   ),
@@ -447,9 +438,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             const SizedBox(height: 24),
                             ColorFiltered(
                               colorFilter: ColorFilter.mode(
-                                isDark 
-                                    ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
-                                    : Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                                Theme.of(context).brightness == Brightness.dark ? Theme.of(context).colorScheme.primary.withOpacity(0.9) : Theme.of(context).colorScheme.primary.withOpacity(0.8),
                                 BlendMode.srcIn,
                               ),
                               child: Lottie.asset(

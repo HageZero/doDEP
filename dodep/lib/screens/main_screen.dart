@@ -5,6 +5,7 @@ import '../providers/language_provider.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_theme.dart';
 import '../widgets/custom_bottom_nav.dart';
+import '../widgets/app_scaffold.dart';
 import 'play_screen.dart';
 import 'shop_screen.dart';
 import 'settings_screen.dart';
@@ -188,11 +189,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     final balanceProvider = Provider.of<BalanceProvider>(context);
     debugPrint('[MainScreen] build: текущий баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
     
-    // Удаляем обработку видео, так как оно теперь показывается в SettingsScreen
     return Stack(
       children: [
-        Scaffold(
-          backgroundColor: Theme.of(context).colorScheme.background,
+        AppScaffold(
           body: PageView(
             controller: _pageController,
             physics: const NeverScrollableScrollPhysics(),

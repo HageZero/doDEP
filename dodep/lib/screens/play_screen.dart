@@ -5,6 +5,7 @@ import '../providers/style_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/slot_reel.dart'; // Импортируем виджет барабана
 import '../widgets/daily_quests_dialog.dart';
+import '../widgets/app_scaffold.dart';
 import '../models/slot_symbol.dart';
 import 'dart:math'; // Для генерации случайных чисел
 import 'dart:async';
@@ -65,7 +66,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   final double _prob2Same = 0.25; // 25%
   final double _prob3Diff = 0.70; // 70%
 
-  late BalanceProvider _balanceProvider;
+  late final BalanceProvider _balanceProvider;
   static const String _lastDodepTimeKey = 'last_dodep_time';
   static const String _dodepCountKey = 'dodep_count';
 
@@ -101,21 +102,29 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    
+    // Инициализируем контроллеры анимации
     _spinAnimationController = AnimationController(
-      duration: const Duration(seconds: 2),
       vsync: this,
+      duration: const Duration(seconds: 2),
     );
 
     _winAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
       vsync: this,
+      duration: const Duration(milliseconds: 1500),
     );
 
     _pulseAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
       vsync: this,
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
+    _rotationAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    );
+
+    // Инициализируем анимации
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.2,
@@ -123,11 +132,6 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       parent: _pulseAnimationController,
       curve: Curves.easeInOut,
     ));
-
-    _rotationAnimationController = AnimationController(
-      duration: const Duration(seconds: 2),
-      vsync: this,
-    );
 
     _rotationAnimation = Tween<double>(
       begin: 0.0,
@@ -259,7 +263,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       case 'tokyopuk':
         newSymbols = SlotSymbols.tokyopuk;
         break;
-      case 'fantasyGacha':
+      case 'fantasy_gacha':
         newSymbols = SlotSymbols.fantasyGacha;
         break;
       default:
@@ -1281,175 +1285,151 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final balanceProvider = Provider.of<BalanceProvider>(context);
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Scaffold(
-            backgroundColor: Theme.of(context).colorScheme.background,
-      extendBody: true,
-      extendBodyBehindAppBar: true,
-            body: SafeArea(
-        bottom: false,
-              child: Stack(
+    return AppScaffold(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_styleProvider.selectedStyleId == 'yamete')
-                    Positioned(
-                      left: -58,
-                      top: 50,
-                      child: IgnorePointer(
-                        child: Image.asset(
-                          'assets/images/lantern.png',
-                          height: 250,
-                          width: 250,
-                          fit: BoxFit.contain,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      decoration: BoxDecoration(
+                        color: Color(0xFF2C2C2C),
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(
+                          color: Color(0xFF404040),
+                          width: 2.0,
                         ),
                       ),
+                      child: Text(
+                        'Казик',
+                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    )
+                  else
+                    Text(
+                      'Казик',
+                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onBackground,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  Padding(
-                    padding: EdgeInsets.only(bottom: bottomPadding),
-                    child: Column(
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (_styleProvider.selectedStyleId == 'yamete')
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                                  decoration: BoxDecoration(
-                                    color: Color(0xFF2C2C2C),
-                                    borderRadius: BorderRadius.circular(12.0),
-                                    border: Border.all(
-                                      color: Color(0xFF404040),
-                                      width: 2.0,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    'Казик',
-                                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                )
-                              else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(20.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 4,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Consumer<BalanceProvider>(
+                          builder: (context, balanceProvider, _) =>
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Image.asset(
+                                  'assets/images/emerald.png',
+                                  height: 24,
+                                  width: 24,
+                                ),
+                                const SizedBox(width: 6),
                                 Text(
-                                  'Казик',
-                                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.onBackground,
+                                  '${balanceProvider.balance}',
+                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primaryContainer,
-                                      borderRadius: BorderRadius.circular(20.0),
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                          blurRadius: 4,
-                                          spreadRadius: 1,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Consumer<BalanceProvider>(
-                                      builder: (context, balanceProvider, _) =>
-                                        Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Image.asset(
-                                              'assets/images/emerald.png',
-                                              height: 24,
-                                              width: 24,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              '${balanceProvider.balance}',
-                                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => DailyQuestsDialog(onBonus: _startBonusFreeSpins),
-                                      );
-                                    },
-                                    child: Stack(
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(3),
-                                          decoration: BoxDecoration(
-                                            color: Theme.of(context).colorScheme.surface,
-                                            borderRadius: BorderRadius.circular(18),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                                                blurRadius: 8,
-                                                spreadRadius: 2,
-                                              ),
-                                            ],
-                                          ),
-                                          child: Image.asset(
-                                            'assets/images/dailyquests.png',
-                                            width: 65,
-                                            height: 65,
-                                          ),
-                                        ),
-                                        Consumer<QuestsProvider>(
-                                          builder: (context, questsProvider, _) {
-                                            if (questsProvider.hasCompletedQuests) {
-                                              return Positioned(
-                                                right: 0,
-                                                top: 0,
-                                                child: Container(
-                                                  width: 12,
-                                                  height: 12,
-                                                  decoration: BoxDecoration(
-                                                    color: Theme.of(context).colorScheme.primary,
-                                                    shape: BoxShape.circle,
-                                                    border: Border.all(
-                                                      color: Theme.of(context).colorScheme.surface,
-                                                      width: 2,
-                                                    ),
-                                                    boxShadow: [
-                                                      BoxShadow(
-                                                        color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                                                        blurRadius: 4,
-                                                        spreadRadius: 1,
-                                                      ),
-                                                    ],
-                                                  ),
-                                                ),
-                                              );
-                                            }
-                                            return const SizedBox.shrink();
-                                          },
-                                        ),
-                                      ],
-                                    ),
+                              ],
+                            ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (context) => DailyQuestsDialog(onBonus: _startBonusFreeSpins),
+                          );
+                        },
+                        child: Stack(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(3),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.surface,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    blurRadius: 8,
+                                    spreadRadius: 2,
                                   ),
                                 ],
                               ),
-                            ],
-                          ),
+                              child: Image.asset(
+                                'assets/images/dailyquests.png',
+                                width: 65,
+                                height: 65,
+                              ),
+                            ),
+                            Consumer<QuestsProvider>(
+                              builder: (context, questsProvider, _) {
+                                if (questsProvider.hasCompletedQuests) {
+                                  return Positioned(
+                                    right: 0,
+                                    top: 0,
+                                    child: Container(
+                                      width: 12,
+                                      height: 12,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Theme.of(context).colorScheme.surface,
+                                          width: 2,
+                                        ),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                            blurRadius: 4,
+                                            spreadRadius: 1,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                }
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: Stack(
-                            children: [
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Stack(
+                children: [
                   Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1482,87 +1462,87 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             ),
                           ),
                         const SizedBox(height: 20),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.secondaryContainer,
-                                borderRadius: BorderRadius.circular(20.0),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
-                                    blurRadius: 4,
-                                    spreadRadius: 1,
-                                  ),
-                                ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            borderRadius: BorderRadius.circular(20.0),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                blurRadius: 4,
+                                spreadRadius: 1,
                               ),
-                              child: Text(
-                                'Ставка: $_currentBet',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            ],
+                          ),
+                          child: Text(
+                            'Ставка: $_currentBet',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: Theme.of(context).colorScheme.onSecondaryContainer,
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 10),
-                              SizedBox(
-                                height: 100,
-                                child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(3, (index) => Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: _buildReel(index),
-                      )),
-                                ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 100,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(3, (index) => Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                              child: _buildReel(index),
+                            )),
+                          ),
+                        ),
+                        const SizedBox(height: 30),
+                        ElevatedButton(
+                          onPressed: (_isSpinning || _winAnimationController.isAnimating || _isFreeSpin) 
+                              ? null 
+                              : _spinReels,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                            const SizedBox(height: 30),
-                            ElevatedButton(
-                              onPressed: (_isSpinning || _winAnimationController.isAnimating || _isFreeSpin) 
-                                  ? null 
-                                  : _spinReels,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 4,
-                              ),
-                              child: Text(
-                                _isSpinning 
-                                    ? 'Крутится...' 
-                                    : _isFreeSpin 
-                                        ? 'Бесплатные прокрутки' 
-                                        : 'Крутить! (${_currentBet})',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                            elevation: 4,
+                          ),
+                          child: Text(
+                            _isSpinning 
+                                ? 'Крутится...' 
+                                : _isFreeSpin 
+                                    ? 'Бесплатные прокрутки' 
+                                    : 'Крутить! (${_currentBet})',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
                             ),
-                            const SizedBox(height: 12),
-                            ElevatedButton(
-                              onPressed: (_isFreeSpin || balanceProvider.balance <= 0) 
-                                  ? null 
-                                  : _showDepositDialog,
-                              style: ElevatedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                elevation: 4,
-                                backgroundColor: (_isFreeSpin || balanceProvider.balance <= 0)
-                                    ? Theme.of(context).colorScheme.surfaceVariant
-                                    : Theme.of(context).colorScheme.primaryContainer,
-                              ),
-                              child: Text(
-                                'Депнуть',
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: (_isFreeSpin || balanceProvider.balance <= 0)
-                                      ? Theme.of(context).colorScheme.onSurfaceVariant
-                                      : Theme.of(context).colorScheme.onPrimaryContainer,
-                                ),
-                              ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: (_isFreeSpin || _balanceProvider.balance <= 0) 
+                              ? null 
+                              : _showDepositDialog,
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                              const SizedBox(height: 16),
+                            elevation: 4,
+                            backgroundColor: (_isFreeSpin || _balanceProvider.balance <= 0)
+                                ? Theme.of(context).colorScheme.surfaceVariant
+                                : Theme.of(context).colorScheme.primaryContainer,
+                          ),
+                          child: Text(
+                            'Депнуть',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              color: (_isFreeSpin || _balanceProvider.balance <= 0)
+                                  ? Theme.of(context).colorScheme.onSurfaceVariant
+                                  : Theme.of(context).colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -1623,14 +1603,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       ),
                     ),
                 ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             ),
+          ],
+        ),
+      ),
     );
   }
 

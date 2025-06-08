@@ -5,6 +5,7 @@ import '../themes/hellokitty_theme.dart';
 import '../themes/doka3_theme.dart';
 import '../themes/lego_theme.dart';
 import '../themes/tokyopuk_theme.dart';
+import '../themes/fantasygacha_theme.dart';
 
 class ThemeProvider extends ChangeNotifier {
   static const String _themeKey = 'is_dark_mode';
@@ -18,6 +19,7 @@ class ThemeProvider extends ChangeNotifier {
 
   bool get isDarkMode => _isDarkMode;
   String get currentStyleTheme => _currentStyleTheme;
+  bool get isFantasyGacha => _currentStyleTheme == 'fantasy_gacha';
 
   ThemeMode get themeMode => _isDarkMode ? ThemeMode.dark : ThemeMode.light;
 
@@ -33,6 +35,8 @@ class ThemeProvider extends ChangeNotifier {
         return _isDarkMode ? LegoTheme.darkTheme : LegoTheme.lightTheme;
       case 'tokyopuk':
         return _isDarkMode ? TokyoGhoulTheme.darkTheme : TokyoGhoulTheme.lightTheme;
+      case 'fantasy_gacha':
+        return _isDarkMode ? FantasyGachaTheme.darkTheme : FantasyGachaTheme.lightTheme;
       default:
         return _isDarkMode ? ThemeData.dark(useMaterial3: true) : ThemeData.light(useMaterial3: true);
     }
