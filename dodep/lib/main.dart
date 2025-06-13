@@ -31,9 +31,29 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'dart:async';
+import 'dart:io';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Edge-to-edge режим для Android
+  if (Platform.isAndroid) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  }
+  
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+    ),
+  );
+  
+  // Запретить переворот экрана, только портретная ориентация
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+  ]);
   
   // Инициализация Hive
   final appDocDir = await getApplicationDocumentsDirectory();

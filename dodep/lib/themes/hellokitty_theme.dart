@@ -22,7 +22,7 @@ class HelloKittyTheme {
         errorContainer: Color(0xFFFFE4E1), // Light Pink
         onErrorContainer: Color(0xFFD72660),
         background: Color(0xFFFFF8FB), // Very light pink/white
-        onBackground: Color(0xFF333333),
+        onBackground: Color(0xFFFFB6C1),
         surface: Colors.white,
         onSurface: Color(0xFF333333),
         surfaceVariant: Color(0xFFFFE4E1), // Light Pink
@@ -31,18 +31,53 @@ class HelloKittyTheme {
         shadow: Color(0xFF000000).withOpacity(0.08),
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFD72660)),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFD72660)),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFD72660)),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFFFF69B4)),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFFFF69B4)),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFFF69B4)),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-        bodyLarge: TextStyle(fontSize: 16, color: Color(0xFF333333)),
-        bodyMedium: TextStyle(fontSize: 14, color: Color(0xFF333333)),
-        bodySmall: TextStyle(fontSize: 12, color: Color(0xFF333333)),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFD72660),
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFD72660),
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFD72660),
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFD700),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF333333),
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF333333),
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF333333),
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       cardTheme: CardThemeData(
         elevation: 4,
@@ -162,18 +197,53 @@ class HelloKittyTheme {
         shadow: Color(0xFF000000).withOpacity(0.18),
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFFF69B4)),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFF69B4)),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF69B4)),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFFFF69B4)),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFFFF69B4)),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFFF69B4)),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFFD700)),
-        bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white),
-        bodySmall: TextStyle(fontSize: 12, color: Colors.white),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF69B4),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFD700),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       cardTheme: CardThemeData(
         elevation: 4,

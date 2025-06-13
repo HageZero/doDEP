@@ -33,61 +33,51 @@ class YameteTheme {
       textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF880E4F), // Темно-розовый
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF880E4F),
         ),
         displayMedium: TextStyle(
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF880E4F),
         ),
         displaySmall: TextStyle(
           fontSize: 24,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF880E4F),
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF4A148C), // Темно-фиолетовый
         ),
         headlineMedium: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF4A148C),
         ),
         headlineSmall: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF4A148C),
         ),
         titleLarge: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF0D47A1), // Темно-голубой
-        ),
-        titleMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF0D47A1),
-        ),
-        titleSmall: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF0D47A1),
         ),
         bodyLarge: TextStyle(
           fontSize: 16,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF1A1A1A),
         ),
         bodyMedium: TextStyle(
           fontSize: 14,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF1A1A1A),
         ),
-        bodySmall: TextStyle(
-          fontSize: 12,
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
           color: Color(0xFF1A1A1A),
         ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       cardTheme: CardThemeData(
         elevation: 4,
@@ -186,61 +176,51 @@ class YameteTheme {
       textTheme: TextTheme(
         displayLarge: TextStyle(
           fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFFFFCDD2), // Светло-розовый
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFCDD2),
         ),
         displayMedium: TextStyle(
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: Color(0xFFFFCDD2),
         ),
         displaySmall: TextStyle(
           fontSize: 24,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w700,
           color: Color(0xFFFFCDD2),
-        ),
-        headlineLarge: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFFE1BEE7), // Светло-фиолетовый
         ),
         headlineMedium: TextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: Color(0xFFE1BEE7),
         ),
         headlineSmall: TextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: Color(0xFFE1BEE7),
         ),
         titleLarge: TextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFFBBDEFB), // Светло-голубой
-        ),
-        titleMedium: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFFBBDEFB),
-        ),
-        titleSmall: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: Color(0xFFBBDEFB),
         ),
         bodyLarge: TextStyle(
           fontSize: 16,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
         bodyMedium: TextStyle(
           fontSize: 14,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        bodySmall: TextStyle(
-          fontSize: 12,
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       cardTheme: CardThemeData(
         elevation: 4,

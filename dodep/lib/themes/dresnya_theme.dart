@@ -31,18 +31,53 @@ class DresnyaTheme {
         shadow: Color(0xFF000000).withOpacity(0.08),
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFE65100)),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFFFF5722)),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFFFF5722)),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFFF5722)),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFFF9800)),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFF9800)),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFF9800)),
-        bodyLarge: TextStyle(fontSize: 16, color: Color(0xFF1A1A1A)),
-        bodyMedium: TextStyle(fontSize: 14, color: Color(0xFF1A1A1A)),
-        bodySmall: TextStyle(fontSize: 12, color: Color(0xFF1A1A1A)),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFE65100),
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFE65100),
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFE65100),
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF5722),
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF5722),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF9800),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF1A1A1A),
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF1A1A1A),
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF1A1A1A),
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       cardTheme: CardThemeData(
         elevation: 4,
@@ -162,18 +197,53 @@ class DresnyaTheme {
         shadow: Color(0xFF000000).withOpacity(0.18),
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Color(0xFFFF8A65)),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Color(0xFFFF8A65)),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFFF8A65)),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: Color(0xFFFFAB91)),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Color(0xFFFFAB91)),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Color(0xFFFFAB91)),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFFFFCC80)),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFFFFCC80)),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFFFCC80)),
-        bodyLarge: TextStyle(fontSize: 16, color: Colors.white.withOpacity(0.95)),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.95)),
-        bodySmall: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.95)),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF8A65),
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF8A65),
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFF8A65),
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFAB91),
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFAB91),
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFFFFCC80),
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       cardTheme: CardThemeData(
         elevation: 4,

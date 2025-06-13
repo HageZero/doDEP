@@ -98,6 +98,13 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   bool _isBonusFreeSpins = false;
 
+  // --- Lucky Block ---
+  DateTime? _lastLuckyBlockTime;
+  bool _showLuckyBlock = false;
+  Timer? _luckyBlockTimer;
+
+  static const String _lastLuckyBlockTimeKey = 'last_lucky_block_time';
+
   @override
   void initState() {
     super.initState();
@@ -216,6 +223,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         _isOffline = result == ConnectivityResult.none;
       });
     });
+
+    _loadLuckyBlockTime();
+    _startLuckyBlockTimer();
   }
 
   @override
@@ -1296,23 +1306,49 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_styleProvider.selectedStyleId == 'yamete')
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                      decoration: BoxDecoration(
-                        color: Color(0xFF2C2C2C),
-                        borderRadius: BorderRadius.circular(12.0),
-                        border: Border.all(
-                          color: Color(0xFF404040),
-                          width: 2.0,
+                    Column(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          decoration: BoxDecoration(
+                            color: Color(0xFF2C2C2C),
+                            borderRadius: BorderRadius.circular(12.0),
+                            border: Border.all(
+                              color: Color(0xFF404040),
+                              width: 2.0,
+                            ),
+                          ),
+                          child: Text(
+                            'Казик',
+                            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'Казик',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
+                        const SizedBox(height: 2),
+                        Builder(
+                          builder: (context) {
+                            // Настраиваемые параметры:
+                            const double lanternHeight = 170; // размер
+                            const double lanternTopOffset = -4; // вверх/вниз (отрицательное - ближе к тексту)
+                            const Alignment lanternAlignment = Alignment.center; // left, center, right
+                            return Container(
+                              alignment: lanternAlignment,
+                              child: Transform.translate(
+                                offset: Offset(0, lanternTopOffset),
+                                child: IgnorePointer(
+                                  child: Image.asset(
+                                    'assets/images/lantern.png',
+                                    height: lanternHeight,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
-                      ),
+                      ],
                     )
                   else
                     Text(
@@ -1422,6 +1458,20 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                           ],
                         ),
                       ),
+                      if (_showLuckyBlock)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: GestureDetector(
+                            onTap: _onLuckyBlockTap,
+                            child: Image.asset(
+                              _styleProvider.selectedStyleId == 'fantasy_gacha'
+                                  ? 'assets/images/chest.png'
+                                  : 'assets/images/luckyblock.png',
+                              width: 70,
+                              height: 70,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ],
@@ -1638,6 +1688,124 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     );
   }
 
+  void _startLuckyBlockTimer() {
+    _luckyBlockTimer?.cancel();
+    _luckyBlockTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+      if (!mounted) return;
+      setState(() {
+        _showLuckyBlock = _canShowLuckyBlock();
+      });
+    });
+  }
+
+  bool _canShowLuckyBlock() {
+    if (_lastLuckyBlockTime == null) return true;
+    final now = DateTime.now();
+    return now.difference(_lastLuckyBlockTime!).inMinutes >= 10;
+  }
+
+  void _onLuckyBlockTap() {
+    setState(() {
+      _lastLuckyBlockTime = DateTime.now();
+      _showLuckyBlock = false;
+    });
+    _saveLuckyBlockTime();
+    // Рандомная награда
+    final rewards = [
+      ...List.filled(20, 50),
+      ...List.filled(15, 100),
+      ...List.filled(15, 150),
+      ...List.filled(10, 300),
+      ...List.filled(10, 500),
+      ...List.filled(3, 1000),
+      ...List.filled(3, 'bonus'),
+    ];
+    rewards.shuffle();
+    final reward = rewards.first;
+    if (reward == 'bonus') {
+      _startBonusFreeSpins();
+      _showRewardMessage('БОНУСКА', color: Colors.purpleAccent);
+    } else {
+      Provider.of<BalanceProvider>(context, listen: false).addBalance(reward as int);
+      _showRewardMessage('+$reward к балансу!', color: Colors.green);
+    }
+  }
+
+  void _showRewardMessage(String text, {Color? color}) {
+    final overlay = Overlay.of(context);
+    final entry = OverlayEntry(
+      builder: (context) {
+        return Center(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeOutBack,
+            builder: (context, value, child) {
+              final anim = (value < 0.8 ? value : (2 - value)).clamp(0.0, 1.0);
+              return Opacity(
+                opacity: anim,
+                child: Transform.scale(
+                  scale: anim,
+                  child: child,
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+              decoration: BoxDecoration(
+                color: (color ?? Colors.amber).withOpacity(0.95),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: (color ?? Colors.amber).withOpacity(0.3),
+                    blurRadius: 24,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Text(
+                text,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      color: Colors.black.withOpacity(0.3),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    overlay.insert(entry);
+    Future.delayed(const Duration(milliseconds: 1800), () {
+      entry.remove();
+    });
+  }
+
+  Future<void> _loadLuckyBlockTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastTimeStr = prefs.getString(_lastLuckyBlockTimeKey);
+    if (lastTimeStr != null) {
+      setState(() {
+        _lastLuckyBlockTime = DateTime.tryParse(lastTimeStr);
+      });
+    }
+  }
+
+  Future<void> _saveLuckyBlockTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (_lastLuckyBlockTime != null) {
+      await prefs.setString(_lastLuckyBlockTimeKey, _lastLuckyBlockTime!.toIso8601String());
+    }
+  }
+
   @override
   void dispose() {
     _dodepTimer?.cancel();
@@ -1659,6 +1827,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     
     _depaAudioPlayer?.stop();
     _depaAudioPlayer?.dispose();
+    
+    _luckyBlockTimer?.cancel();
+    
+    _saveLuckyBlockTime();
     
     super.dispose();
   }

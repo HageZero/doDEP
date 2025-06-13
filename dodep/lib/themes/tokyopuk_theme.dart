@@ -94,18 +94,53 @@ class TokyoGhoulTheme {
         elevation: 4,
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: kaguneRed),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: kaguneRed),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: kaguneRed),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: kaguneRed),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: kaguneRed),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: kaguneRed),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: kaguneBlack),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: kaguneBlack),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: kaguneBlack),
-        bodyLarge: TextStyle(fontSize: 16, color: kaguneBlack),
-        bodyMedium: TextStyle(fontSize: 14, color: kaguneBlack),
-        bodySmall: TextStyle(fontSize: 12, color: kaguneBlack),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: kaguneRed,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: kaguneRed,
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: kaguneRed,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: kaguneRed,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: kaguneRed,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: kaguneBlack,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: kaguneBlack,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: kaguneBlack,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: kaguneBlack,
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       scaffoldBackgroundColor: lightBackground,
       navigationBarTheme: NavigationBarThemeData(
@@ -122,7 +157,7 @@ class TokyoGhoulTheme {
           if (states.contains(MaterialState.selected)) {
             return const IconThemeData(color: kaguneRed);
           }
-          return IconThemeData(color: Colors.grey[600]);
+          return IconThemeData(color: Colors.grey[700]);
         }),
       ),
     );
@@ -192,18 +227,53 @@ class TokyoGhoulTheme {
         elevation: 4,
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: ghoulEye),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: ghoulEye),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: ghoulEye),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: ghoulEye),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: ghoulEye),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: ghoulEye),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: maskWhite),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: maskWhite),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: maskWhite),
-        bodyLarge: TextStyle(fontSize: 16, color: maskWhite),
-        bodyMedium: TextStyle(fontSize: 14, color: maskWhite),
-        bodySmall: TextStyle(fontSize: 12, color: maskWhite),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: ghoulEye,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: ghoulEye,
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: ghoulEye,
+        ),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: ghoulEye,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: ghoulEye,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: maskWhite,
+        ),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: maskWhite,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: maskWhite,
+        ),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: maskWhite,
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       scaffoldBackgroundColor: darkBackground,
       navigationBarTheme: NavigationBarThemeData(

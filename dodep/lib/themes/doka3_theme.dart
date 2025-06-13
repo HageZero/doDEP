@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class Doka3Theme {
   // Dota 2 color palette
   static const Color dotaRed = Color(0xFFC23C2A); // Radiant red
-  static const Color dotaDarkRed = Color(0xFF8B0000); // Dark red
+  static const Color dotaDarkRed = Color(0xFF8700); // Dark red
   static const Color dotaGreen = Color(0xFF4CAF50); // Light green
   static const Color dotaLightGreen = Color(0xFF81C784); // Lighter green
   static const Color dotaDarkGreen = Color(0xFF2E7D32); // Dark green
@@ -28,8 +28,8 @@ class Doka3Theme {
         error: dotaRed,
         onError: Colors.white,
         background: Colors.white,
-        onBackground: dotaDarkGray,
-        surface: Colors.grey[100]!,
+        onBackground: dotaLightGreen,
+        surface: Colors.grey[700]!,
         onSurface: dotaDarkGray,
         primaryContainer: dotaGreen,
         onPrimaryContainer: Colors.white,
@@ -37,8 +37,8 @@ class Doka3Theme {
         onSecondaryContainer: Colors.white,
         tertiaryContainer: dotaLightGreen,
         onTertiaryContainer: Colors.white,
-        surfaceVariant: Colors.grey[100]!,
-        onSurfaceVariant: Colors.grey[800]!,
+        surfaceVariant: Colors.grey[700]!,
+        onSurfaceVariant: Colors.grey[700]!,
       ),
       cardTheme: const CardThemeData(
         elevation: 4,
@@ -81,18 +81,57 @@ class Doka3Theme {
         elevation: 4,
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: dotaGreen),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: dotaGreen),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: dotaGreen),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: dotaGreen),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: dotaGreen),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: dotaGreen),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: dotaDarkGray),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: dotaDarkGray),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: dotaDarkGray),
-        bodyLarge: TextStyle(fontSize: 16, color: dotaDarkGray),
-        bodyMedium: TextStyle(fontSize: 14, color: dotaDarkGray),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: dotaGreen,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: dotaGreen,
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: dotaGreen,
+        ),
+        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: dotaGreen),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: dotaGreen,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: dotaGreen,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: dotaDarkGray,
+        ),
+        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: dotaDarkGray),
+        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dotaDarkGray),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: dotaDarkGray,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: dotaDarkGray,
+        ),
         bodySmall: TextStyle(fontSize: 12, color: dotaDarkGray),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: dotaDarkGray,
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       scaffoldBackgroundColor: Colors.white,
     );
@@ -119,7 +158,7 @@ class Doka3Theme {
         tertiaryContainer: dotaDarkRed.withOpacity(0.2),
         onTertiaryContainer: dotaDarkRed,
         surfaceVariant: Color(0xFF2A2A2A),
-        onSurfaceVariant: Colors.grey[300]!,
+        onSurfaceVariant: Colors.grey[700]!,
       ),
       cardTheme: const CardThemeData(
         elevation: 4,
@@ -162,18 +201,57 @@ class Doka3Theme {
         elevation: 4,
       ),
       textTheme: TextTheme(
-        displayLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: dotaRed),
-        displayMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: dotaRed),
-        displaySmall: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: dotaRed),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w600, color: dotaRed),
-        headlineMedium: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: dotaRed),
-        headlineSmall: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: dotaRed),
-        titleLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-        bodyLarge: TextStyle(fontSize: 16, color: Colors.white),
-        bodyMedium: TextStyle(fontSize: 14, color: Colors.white),
+        displayLarge: TextStyle(
+          fontSize: 32,
+          fontWeight: FontWeight.w700,
+          color: dotaRed,
+        ),
+        displayMedium: TextStyle(
+          fontSize: 28,
+          fontWeight: FontWeight.w700,
+          color: dotaRed,
+        ),
+        displaySmall: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.w700,
+          color: dotaRed,
+        ),
+        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: dotaRed),
+        headlineMedium: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: dotaRed,
+        ),
+        headlineSmall: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: dotaRed,
+        ),
+        titleLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+        bodyLarge: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+        bodyMedium: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
         bodySmall: TextStyle(fontSize: 12, color: Colors.white),
+        labelLarge: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: Colors.white,
+        ),
+      ).apply(
+        fontFamily: 'Inter',
       ),
       scaffoldBackgroundColor: dotaDarkGray,
     );

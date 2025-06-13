@@ -65,289 +65,291 @@ class CustomBottomNav extends StatelessWidget {
     
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              color: currentStyle.id == 'doka3' 
-                  ? Color(0xFF2A2A2A) // dotaMenuGray
-                  : currentStyle.id == 'tokyopuk'
-                      ? isDark
-                          ? Color(0xFF8B0000) // darkSurface
-                          : Color(0xFF1A1A1A) // lightSurface
-                      : colorScheme.surface,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildNavItem(
-                      context,
-                      'assets/images/shop_icon.png',
-                      'assets/images/shop_icon.png',
-                      0,
-                      isDark,
-                      primaryColor,
-                      secondaryColor,
-                    ),
-                    _buildNavItem(
-                      context,
-                      'assets/images/slots_icon.png',
-                      'assets/images/slots_icon.png',
-                      1,
-                      isDark,
-                      primaryColor,
-                      secondaryColor,
-                    ),
-                    _buildNavItem(
-                      context,
-                      'assets/images/style_icon.png',
-                      'assets/images/style_icon.png',
-                      2,
-                      isDark,
-                      primaryColor,
-                      secondaryColor,
-                    ),
-                    _buildNavItem(
-                      context,
-                      'assets/images/profile_icon.png',
-                      'assets/images/profile_icon.png',
-                      3,
-                      isDark,
-                      primaryColor,
-                      secondaryColor,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          if (currentStyle.id == 'minecraft')
-            Positioned(
-              top: -50,
-              right: -20,
-              child: IgnorePointer(
-              child: Transform(
-                alignment: Alignment.center,
-                transform: Matrix4.rotationY(pi),
-                child: Image.asset(
-                  'assets/images/ghast.png',
-                  width: 80,
-                  height: 80,
-                  fit: BoxFit.contain,
+      child: SafeArea(
+        minimum: EdgeInsets.zero,
+        top: false,
+        left: false,
+        right: false,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: currentStyle.id == 'doka3' 
+                    ? Color(0xFF2A2A2A) // dotaMenuGray
+                    : currentStyle.id == 'tokyopuk'
+                        ? isDark
+                            ? Color(0xFF8B0000) // darkSurface
+                            : Color(0xFF1A1A1A) // lightSurface
+                        : colorScheme.surface,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
                   ),
-                ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(
+                    context,
+                    'assets/images/shop_icon.png',
+                    'assets/images/shop_icon.png',
+                    0,
+                    isDark,
+                    primaryColor,
+                    secondaryColor,
+                  ),
+                  _buildNavItem(
+                    context,
+                    'assets/images/slots_icon.png',
+                    'assets/images/slots_icon.png',
+                    1,
+                    isDark,
+                    primaryColor,
+                    secondaryColor,
+                  ),
+                  _buildNavItem(
+                    context,
+                    'assets/images/style_icon.png',
+                    'assets/images/style_icon.png',
+                    2,
+                    isDark,
+                    primaryColor,
+                    secondaryColor,
+                  ),
+                  _buildNavItem(
+                    context,
+                    'assets/images/profile_icon.png',
+                    'assets/images/profile_icon.png',
+                    3,
+                    isDark,
+                    primaryColor,
+                    secondaryColor,
+                  ),
+                ],
               ),
             ),
-          if (currentStyle.id == 'minecraft')
-            Positioned(
-              top: 45,
-              right: 325,
-              child: IgnorePointer(
-                child: Image.asset(
-                  'assets/images/earth.png',
-                  width: 50,
-                  height: 50,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            if (currentStyle.id == 'doka3')
-            Positioned(
-              top: 0,
-              right: -32,
-              child: IgnorePointer(
+            if (currentStyle.id == 'minecraft')
+              Positioned(
+                top: -50,
+                right: -20,
+                child: IgnorePointer(
                 child: Transform(
                   alignment: Alignment.center,
-                  transform: Matrix4.rotationX(pi),
+                  transform: Matrix4.rotationY(pi),
                   child: Image.asset(
-                    'assets/images/desolator.png',
-                    width: 100,
-                    height: 100,
+                    'assets/images/ghast.png',
+                    width: 80,
+                    height: 80,
                     fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'doka3' && !isDark)
-            Positioned(
-              top: -35,
-              right: 110,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity(),
+            if (currentStyle.id == 'minecraft')
+              Positioned(
+                top: 45,
+                right: 325,
+                child: IgnorePointer(
                   child: Image.asset(
-                    'assets/images/blade.png',
-                    width: 130,
-                    height: 130,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ),
-            if (currentStyle.id == 'doka3' && isDark)
-            Positioned(
-              top: -40,
-              right: 121,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity(),
-                  child: Image.asset(
-                    'assets/images/agan.png',
-                    width: 120,
-                    height: 120,
-                    fit: BoxFit.contain,
-                  ),
-                ),
-              ),
-            ),
-            if (currentStyle.id == 'doka3')
-            Positioned(
-              top: -30,
-              right: 295,
-              child: IgnorePointer(
-                child: Image.asset(
-                  'assets/images/hex.png',
-                  width: 100,
-                  height: 100,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-            if (currentStyle.id == 'yamete')
-            Positioned(
-              top: -25,
-              right: 65,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.rotationZ(30 * pi / 180),
-                  child: Image.asset(
-                    'assets/images/sakuraflower.png',
+                    'assets/images/earth.png',
                     width: 50,
                     height: 50,
                     fit: BoxFit.contain,
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'yamete')
-            Positioned(
-              top: -15, 
-              left: 50,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.rotationZ(90 * pi / 180),
+              if (currentStyle.id == 'doka3')
+              Positioned(
+                top: 0,
+                right: -32,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationX(pi),
+                    child: Image.asset(
+                      'assets/images/desolator.png',
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              if (currentStyle.id == 'doka3' && !isDark)
+              Positioned(
+                top: -35,
+                right: 110,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity(),
+                    child: Image.asset(
+                      'assets/images/blade.png',
+                      width: 130,
+                      height: 130,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              if (currentStyle.id == 'doka3' && isDark)
+              Positioned(
+                top: -40,
+                right: 121,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity(),
+                    child: Image.asset(
+                      'assets/images/agan.png',
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              if (currentStyle.id == 'doka3')
+              Positioned(
+                top: -30,
+                right: 295,
+                child: IgnorePointer(
                   child: Image.asset(
-                    'assets/images/sakuraflower.png',
-                    width: 40,
-                    height: 40,
+                    'assets/images/hex.png',
+                    width: 100,
+                    height: 100,
                     fit: BoxFit.contain,
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'yamete')
-            Positioned(
-              top: 55, 
-              right: 36,
-              left: 0,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.rotationZ(-10 * pi / 180),
-                  child: Image.asset(
-                    'assets/images/sakuraflower.png',
-                    width: 35,
-                    height: 35,
-                    fit: BoxFit.contain,
+              if (currentStyle.id == 'yamete')
+              Positioned(
+                top: -25,
+                right: 65,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationZ(30 * pi / 180),
+                    child: Image.asset(
+                      'assets/images/sakuraflower.png',
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'tokyopuk')
-            Positioned(
-              top: -15, 
-              right: -40,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity(),
-                  child: Image.asset(
-                    'assets/images/centipede.png',
-                    width: 110,
-                    height: 110,
-                    fit: BoxFit.contain,
+              if (currentStyle.id == 'yamete')
+              Positioned(
+                top: -15, 
+                left: 50,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationZ(90 * pi / 180),
+                    child: Image.asset(
+                      'assets/images/sakuraflower.png',
+                      width: 40,
+                      height: 40,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'fantasy_gacha' && isDark)
-            Positioned(
-              top: -20,
-              right: 121,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity(),
-                  child: Image.asset(
-                    'assets/images/sword2.png',
-                    width: 110,
-                    height: 110,
-                    fit: BoxFit.contain,
+              if (currentStyle.id == 'yamete')
+              Positioned(
+                top: 55, 
+                right: 36,
+                left: 0,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.rotationZ(-10 * pi / 180),
+                    child: Image.asset(
+                      'assets/images/sakuraflower.png',
+                      width: 35,
+                      height: 35,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'fantasy_gacha' && !isDark)
-            Positioned(
-              top: -20,
-              right: 121,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity(),
-                  child: Image.asset(
-                    'assets/images/sword.png',
-                    width: 110,
-                    height: 110,
-                    fit: BoxFit.contain,
+              if (currentStyle.id == 'tokyopuk')
+              Positioned(
+                top: -15, 
+                right: -40,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity(),
+                    child: Image.asset(
+                      'assets/images/centipede.png',
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-            ),
-            if (currentStyle.id == 'fantasy_gacha')
-            Positioned(
-              top: -70, 
-              right: -10,
-              child: IgnorePointer(
-                child: Transform(
-                  alignment: Alignment.center,
-                  transform: Matrix4.identity(),
-                  child: Image.asset(
-                    'assets/images/cat.png',
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.contain,
+              if (currentStyle.id == 'fantasy_gacha' && isDark)
+              Positioned(
+                top: -20,
+                right: 121,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity(),
+                    child: Image.asset(
+                      'assets/images/sword2.png',
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-            ),
-        ],
+              if (currentStyle.id == 'fantasy_gacha' && !isDark)
+              Positioned(
+                top: -20,
+                right: 121,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity(),
+                    child: Image.asset(
+                      'assets/images/sword.png',
+                      width: 110,
+                      height: 110,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+              if (currentStyle.id == 'fantasy_gacha')
+              Positioned(
+                top: -70, 
+                right: -10,
+                child: IgnorePointer(
+                  child: Transform(
+                    alignment: Alignment.center,
+                    transform: Matrix4.identity(),
+                    child: Image.asset(
+                      'assets/images/cat.png',
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

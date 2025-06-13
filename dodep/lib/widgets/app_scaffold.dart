@@ -20,7 +20,7 @@ class AppScaffold extends StatelessWidget {
     this.bottomNavigationBar,
     this.floatingActionButton,
     this.backgroundColor,
-    this.extendBody = false,
+    this.extendBody = true,
     this.extendBodyBehindAppBar = false,
   }) : super(key: key);
 
@@ -32,7 +32,11 @@ class AppScaffold extends StatelessWidget {
     // Проверяем, есть ли фоновая картинка
     final bool hasBackgroundImage = themeProvider.isFantasyGacha || 
                                   styleProvider.selectedStyleId == 'yamete' ||
-                                  styleProvider.selectedStyleId == 'minecraft';
+                                  styleProvider.selectedStyleId == 'minecraft' ||
+                                  styleProvider.selectedStyleId == 'lego' ||
+                                  styleProvider.selectedStyleId == 'doka3' ||
+                                  styleProvider.selectedStyleId == 'hellokitty'||
+                                  styleProvider.selectedStyleId == 'tokyopuk';
     
     return BackgroundContainer(
       child: Container(

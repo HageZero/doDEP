@@ -63,7 +63,7 @@ class QuestsProvider extends ChangeNotifier {
     ),
     Quest(
       id: 'freespins',
-      title: 'Получить 10 бесплатных прокруток',
+      title: 'Выбить бонуску',
       target: 1,
       icon: Icons.refresh,
       color: Colors.teal,

@@ -18,6 +18,7 @@ import '../services/cache_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import '../providers/style_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -338,159 +339,163 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: Stack(
         children: [
           SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Профиль',
-                          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.onBackground,
-                            fontWeight: FontWeight.bold,
-                          ),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Профиль',
+                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onBackground,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primaryContainer,
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primaryContainer,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
                             borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                                blurRadius: 8,
-                                spreadRadius: 1,
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(12),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.all(12.0),
-                                child: Icon(
-                                  Icons.settings,
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  size: 24,
-                                ),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Icon(
+                                Icons.settings,
+                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                size: 24,
                               ),
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Аватар и имя пользователя
-                    Center(
-                      child: Column(
-                        children: [
-                          Consumer<AuthService>(
-                            builder: (context, authService, _) {
-                              final avatarPath = authService.getCurrentUserSync()?.avatarPath;
-                              if (_hasInternet == true && avatarPath != null && avatarPath.startsWith('http')) {
-                                return CircleAvatar(
-                                  radius: 50,
-                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                  child: ClipOval(
-                                    child: Image.network(
-                                      avatarPath,
-                                      key: ValueKey(avatarPath),
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return Center(child: CircularProgressIndicator());
-                                      },
-                                      errorBuilder: (context, error, stackTrace) {
-                                        if (_localAvatarPath != null) {
-                                          return Image.file(
-                                            File(_localAvatarPath!),
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          );
-                                        }
-                                        return Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer);
-                                      },
-                                    ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Аватар и имя пользователя
+                  Center(
+                    child: Column(
+                      children: [
+                        Consumer<AuthService>(
+                          builder: (context, authService, _) {
+                            final avatarPath = authService.getCurrentUserSync()?.avatarPath;
+                            if (_hasInternet == true && avatarPath != null && avatarPath.startsWith('http')) {
+                              return CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                child: ClipOval(
+                                  child: Image.network(
+                                    avatarPath,
+                                    key: ValueKey(avatarPath),
+                                    width: 100,
+                                    height: 100,
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Center(child: CircularProgressIndicator());
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      if (_localAvatarPath != null) {
+                                        return Image.file(
+                                          File(_localAvatarPath!),
+                                          width: 100,
+                                          height: 100,
+                                          fit: BoxFit.cover,
+                                        );
+                                      }
+                                      return Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer);
+                                    },
                                   ),
-                                );
-                              } else if (_localAvatarPath != null) {
-                                return CircleAvatar(
-                                  radius: 50,
-                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                  backgroundImage: FileImage(File(_localAvatarPath!)),
-                                );
-                              } else {
-                                return CircleAvatar(
-                                  radius: 50,
-                                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                  child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer),
-                                );
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          Consumer<AuthService>(
-                            builder: (context, authService, _) {
-                              final user = authService.getCurrentUserSync();
-                              return Text(
-                                user?.username ?? 'Загрузка...',
-                                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                  color: Theme.of(context).colorScheme.onBackground,
                                 ),
                               );
-                            },
+                            } else if (_localAvatarPath != null) {
+                              return CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                backgroundImage: FileImage(File(_localAvatarPath!)),
+                              );
+                            } else {
+                              return CircleAvatar(
+                                radius: 50,
+                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Consumer<AuthService>(
+                          builder: (context, authService, _) {
+                            final user = authService.getCurrentUserSync();
+                            return Text(
+                              user?.username ?? 'Загрузка...',
+                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                color: Theme.of(context).colorScheme.onBackground,
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Кнопка редактирования профиля
+                  Card(
+                    elevation: 2,
+                    color: Theme.of(context).colorScheme.surface,
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.edit,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      title: Text(
+                        'Изменить аватарку',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface,
+                        ),
+                      ),
+                      onTap: _pickImage,
+                    ),
+                  ),
+                  if (selectedStyle.id == 'minecraft')
+                    Positioned(
+                      top: -100,
+                      right: 0,
+                      child: IgnorePointer(
+                      child: Transform(
+                        alignment: Alignment.center,
+                        transform: Matrix4.identity(),
+                        child: Image.asset(
+                          'assets/images/nether.png',
+                          width: 300,
+                          height: 300,
+                          fit: BoxFit.contain,
                           ),
-                        ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Кнопка редактирования профиля
-                    Card(
-                      elevation: 2,
-                      color: Theme.of(context).colorScheme.surface,
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.edit,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        title: Text(
-                          'Изменить аватарку',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                        ),
-                        onTap: _pickImage,
-                      ),
-                    ),
-                    if (selectedStyle.id == 'minecraft')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 16.0),
-                        child: Center(
-                          child: Image.asset(
-                            'assets/images/nether.png',
-                            width: 400,
-                            height: 300,
-                            fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                  const SizedBox(height: 24),
+                  // Лидеры (только таблица скроллируется)
+                  _LeaderboardWidget(),
+                ],
               ),
             ),
           ),
@@ -508,6 +513,225 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// --- Leaderboard Widget ---
+class _LeaderboardWidget extends StatefulWidget {
+  @override
+  State<_LeaderboardWidget> createState() => _LeaderboardWidgetState();
+}
+
+class _LeaderboardWidgetState extends State<_LeaderboardWidget> {
+  String _sortField = 'balance';
+  final Map<String, String> _fieldNames = {
+    'balance': 'Баланс',
+    'spinsCount': 'Прокрутки',
+    'maxWin': 'Макс. выигрыш',
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = Theme.of(context).colorScheme.primary;
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      color: Theme.of(context).colorScheme.surface.withOpacity(0.5),
+      child: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Center(
+              child: Text(
+                'топ деперы',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _LeaderboardSortIcon(
+                  icon: Icons.monetization_on,
+                  label: 'Баланс',
+                  selected: _sortField == 'balance',
+                  onTap: () => setState(() => _sortField = 'balance'),
+                  color: iconColor,
+                ),
+                const SizedBox(width: 16),
+                _LeaderboardSortIcon(
+                  icon: Icons.refresh_rounded,
+                  label: 'Прокрутки',
+                  selected: _sortField == 'spinsCount',
+                  onTap: () => setState(() => _sortField = 'spinsCount'),
+                  color: iconColor,
+                ),
+                const SizedBox(width: 16),
+                _LeaderboardSortIcon(
+                  icon: Icons.emoji_events,
+                  label: 'Макс. выигрыш',
+                  selected: _sortField == 'maxWin',
+                  onTap: () => setState(() => _sortField = 'maxWin'),
+                  color: iconColor,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<QuerySnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .orderBy(_sortField, descending: true)
+                  .limit(10)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Text('Нет данных для отображения');
+                }
+                final docs = snapshot.data!.docs;
+                return SizedBox(
+                  height: 168,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: docs.length,
+                    itemExtent: 56,
+                    itemBuilder: (context, i) {
+                      final data = docs[i].data() as Map<String, dynamic>;
+                      final avatarPath = data['avatarPath'] as String?;
+                      final username = data['username'] ?? 'Без имени';
+                      final statValue = data[_sortField] ?? 0;
+                      Color placeColor;
+                      switch (i) {
+                        case 0: placeColor = Colors.amber; break;
+                        case 1: placeColor = Colors.grey[400]!; break;
+                        case 2: placeColor = Colors.brown[300]!; break;
+                        default: placeColor = Theme.of(context).colorScheme.primary;
+                      }
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            // Место в топе (фиксированная ширина)
+                            SizedBox(
+                              width: 36,
+                              child: Text(
+                                '${i + 1}',
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w900,
+                                  color: placeColor,
+                                  height: 1,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.15),
+                                      blurRadius: 4,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            // Аватарка и username строго по одной линии
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  if (avatarPath != null && avatarPath.isNotEmpty)
+                                    CircleAvatar(
+                                      radius: 22,
+                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                      backgroundImage: NetworkImage(avatarPath),
+                                    )
+                                  else
+                                    CircleAvatar(
+                                      radius: 22,
+                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                      child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                    ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Text(
+                                      username,
+                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              '$statValue',
+                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// --- Leaderboard Sort Icon Widget ---
+class _LeaderboardSortIcon extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+  final Color color;
+
+  const _LeaderboardSortIcon({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: selected ? color.withOpacity(0.15) : Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: selected ? color : Colors.grey[400]!,
+                width: selected ? 2 : 1,
+              ),
+            ),
+            padding: const EdgeInsets.all(10),
+            child: Icon(
+              icon,
+              color: selected ? color : Colors.grey[600],
+              size: 28,
+            ),
+          ),
         ],
       ),
     );
