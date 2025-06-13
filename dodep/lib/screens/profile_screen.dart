@@ -71,13 +71,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: themeProvider.isDarkMode 
-            ? Brightness.light 
-            : Brightness.dark,
+        statusBarIconBrightness:
+            themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
         systemNavigationBarColor: Theme.of(context).colorScheme.background,
-        systemNavigationBarIconBrightness: themeProvider.isDarkMode 
-            ? Brightness.light 
-            : Brightness.dark,
+        systemNavigationBarIconBrightness:
+            themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
       ),
     );
   }
@@ -122,7 +120,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final localPath = await CacheService.getAvatarLocalPath();
     if (mounted) {
       setState(() {
-        _localAvatarPath = (localPath != null && File(localPath).existsSync()) ? localPath : null;
+        _localAvatarPath = (localPath != null && File(localPath).existsSync())
+            ? localPath
+            : null;
       });
     }
   }
@@ -141,7 +141,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Необходим доступ к галерее для выбора изображения'),
+              content:
+                  Text('Необходим доступ к галерее для выбора изображения'),
               backgroundColor: Theme.of(context).colorScheme.error,
             ),
           );
@@ -155,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         maxHeight: 1024,
         imageQuality: 85,
       );
-      
+
       if (image != null && mounted) {
         try {
           // Показываем диалог загрузки
@@ -196,7 +197,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 lockAspectRatio: true,
                 hideBottomControls: true,
                 showCropGrid: true,
-                activeControlsWidgetColor: Theme.of(context).colorScheme.primary,
+                activeControlsWidgetColor:
+                    Theme.of(context).colorScheme.primary,
                 statusBarColor: Theme.of(context).colorScheme.background,
                 backgroundColor: Theme.of(context).colorScheme.background,
               ),
@@ -239,13 +241,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
 
             try {
-              final authService = Provider.of<AuthService>(context, listen: false);
+              final authService =
+                  Provider.of<AuthService>(context, listen: false);
               await authService.setCurrentUserAvatar(croppedFile.path);
               await Future.delayed(const Duration(seconds: 2));
               if (mounted) {
                 Navigator.of(context).pop(); // Закрываем диалог загрузки
                 await authService.forceRefreshUserData();
-                final newAvatarPath = authService.getCurrentUserSync()?.avatarPath;
+                final newAvatarPath =
+                    authService.getCurrentUserSync()?.avatarPath;
                 await _afterAvatarChanged(newAvatarPath);
                 setState(() {
                   _showSuccessAnimation = true;
@@ -304,19 +308,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       await authService.forceRefreshUserData();
-      final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+      final balanceProvider =
+          Provider.of<BalanceProvider>(context, listen: false);
       int retry = 0;
       while (balanceProvider.ignoreRemoteBalanceUpdate && retry < 5) {
-        debugPrint('[ProfileScreen] sync/load заблокирован (ignoreRemoteBalanceUpdate=true), жду...');
+        debugPrint(
+            '[ProfileScreen] sync/load заблокирован (ignoreRemoteBalanceUpdate=true), жду...');
         await Future.delayed(const Duration(seconds: 1));
         retry++;
       }
       if (!balanceProvider.ignoreRemoteBalanceUpdate) {
-        debugPrint('[ProfileScreen] _refreshUserData: до syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+        debugPrint(
+            '[ProfileScreen] _refreshUserData: до syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
         await balanceProvider.syncLocalOrLoadRemoteBalance();
-        debugPrint('[ProfileScreen] _refreshUserData: после syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
+        debugPrint(
+            '[ProfileScreen] _refreshUserData: после syncLocalOrLoadRemoteBalance, баланс: \x1b[33m${balanceProvider.balance}\x1b[0m');
       } else {
-        debugPrint('[ProfileScreen] sync/load так и не разблокирован, пропускаю syncLocalOrLoadRemoteBalance');
+        debugPrint(
+            '[ProfileScreen] sync/load так и не разблокирован, пропускаю syncLocalOrLoadRemoteBalance');
       }
       // Обновляем аватар
       if (mounted) {
@@ -333,7 +342,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final currentUser = authService.getCurrentUserSync();
     final languageProvider = Provider.of<LanguageProvider>(context);
     final styleProvider = Provider.of<StyleProvider>(context);
-    final selectedStyle = styleProvider.getStyleById(styleProvider.selectedStyleId);
+    final selectedStyle =
+        styleProvider.getStyleById(styleProvider.selectedStyleId);
 
     return AppScaffold(
       body: Stack(
@@ -349,10 +359,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     children: [
                       Text(
                         'Профиль',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onBackground,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .displaySmall
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.onBackground,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       Container(
                         decoration: BoxDecoration(
@@ -360,7 +373,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.2),
                               blurRadius: 8,
                               spreadRadius: 1,
                             ),
@@ -373,14 +389,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const SettingsScreen()),
                               );
                             },
                             child: Padding(
                               padding: const EdgeInsets.all(12.0),
                               child: Icon(
                                 Icons.settings,
-                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onPrimaryContainer,
                                 size: 24,
                               ),
                             ),
@@ -396,11 +416,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Consumer<AuthService>(
                           builder: (context, authService, _) {
-                            final avatarPath = authService.getCurrentUserSync()?.avatarPath;
-                            if (_hasInternet == true && avatarPath != null && avatarPath.startsWith('http')) {
+                            final avatarPath =
+                                authService.getCurrentUserSync()?.avatarPath;
+                            if (_hasInternet == true &&
+                                avatarPath != null &&
+                                avatarPath.startsWith('http')) {
                               return CircleAvatar(
                                 radius: 50,
-                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                                 child: ClipOval(
                                   child: Image.network(
                                     avatarPath,
@@ -408,9 +433,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     width: 100,
                                     height: 100,
                                     fit: BoxFit.cover,
-                                    loadingBuilder: (context, child, loadingProgress) {
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
                                       if (loadingProgress == null) return child;
-                                      return Center(child: CircularProgressIndicator());
+                                      return Center(
+                                          child: CircularProgressIndicator());
                                     },
                                     errorBuilder: (context, error, stackTrace) {
                                       if (_localAvatarPath != null) {
@@ -421,7 +448,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                           fit: BoxFit.cover,
                                         );
                                       }
-                                      return Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer);
+                                      return Icon(Icons.person,
+                                          size: 50,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer);
                                     },
                                   ),
                                 ),
@@ -429,14 +460,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             } else if (_localAvatarPath != null) {
                               return CircleAvatar(
                                 radius: 50,
-                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                backgroundImage: FileImage(File(_localAvatarPath!)),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                backgroundImage:
+                                    FileImage(File(_localAvatarPath!)),
                               );
                             } else {
                               return CircleAvatar(
                                 radius: 50,
-                                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                child: Icon(Icons.person, size: 50, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                backgroundColor: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
+                                child: Icon(Icons.person,
+                                    size: 50,
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onPrimaryContainer),
                               );
                             }
                           },
@@ -447,9 +487,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             final user = authService.getCurrentUserSync();
                             return Text(
                               user?.username ?? 'Загрузка...',
-                              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Theme.of(context).colorScheme.onBackground,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .headlineMedium
+                                  ?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onBackground,
+                                  ),
                             );
                           },
                         ),
@@ -469,32 +514,84 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       title: Text(
                         'Изменить аватарку',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurface,
-                        ),
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                       ),
                       onTap: _pickImage,
                     ),
                   ),
-                  if (selectedStyle.id == 'minecraft')
-                    Positioned(
-                      top: -100,
-                      right: 0,
-                      child: IgnorePointer(
-                      child: Transform(
-                        alignment: Alignment.center,
-                        transform: Matrix4.identity(),
-                        child: Image.asset(
-                          'assets/images/nether.png',
-                          width: 300,
-                          height: 300,
-                          fit: BoxFit.contain,
-                          ),
-                        ),
-                      ),
-                    ),
+
                   const SizedBox(height: 24),
                   // Лидеры (только таблица скроллируется)
-                  _LeaderboardWidget(),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      _LeaderboardWidget(),
+                      if (selectedStyle.id == 'minecraft')
+                        Positioned(
+                          top: -80,
+                          left: 0,
+                          right: -230,
+                          child: IgnorePointer(
+                            child: Center(
+                              child: Image.asset(
+                                'assets/images/nether.png',
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (selectedStyle.id == 'fantasy_gacha')
+                        Positioned(
+                          top: -80,
+                          left: 0,
+                          right: -230,
+                          child: IgnorePointer(
+                            child: Center(
+                              child: Image.asset(
+                                'assets/images/casstle.png',
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (selectedStyle.id == 'yamete')
+                        Positioned(
+                          top: -30,
+                          left: 0,
+                          right: 0,
+                          child: IgnorePointer(
+                            child: Center(
+                              child: Image.asset(
+                                'assets/images/tori2.png',
+                                width: 100,
+                                height: 400,
+                              ),
+                            ),
+                          ),
+                        ),
+                      if (selectedStyle.id == 'doka3')
+                        Positioned(
+                          top: -100,
+                          left: 0,
+                          right: -230,
+                          child: IgnorePointer(
+                            child: Center(
+                              child: Image.asset(
+                                'assets/images/jugger.png',
+                                width: 150,
+                                height: 150,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -549,10 +646,10 @@ class _LeaderboardWidgetState extends State<_LeaderboardWidget> {
               child: Text(
                 'топ деперы',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  letterSpacing: 1.2,
-                ),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                      letterSpacing: 1.2,
+                    ),
               ),
             ),
             const SizedBox(height: 10),
@@ -612,10 +709,17 @@ class _LeaderboardWidgetState extends State<_LeaderboardWidget> {
                       final statValue = data[_sortField] ?? 0;
                       Color placeColor;
                       switch (i) {
-                        case 0: placeColor = Colors.amber; break;
-                        case 1: placeColor = Colors.grey[400]!; break;
-                        case 2: placeColor = Colors.brown[300]!; break;
-                        default: placeColor = Theme.of(context).colorScheme.primary;
+                        case 0:
+                          placeColor = Colors.amber;
+                          break;
+                        case 1:
+                          placeColor = Colors.grey[400]!;
+                          break;
+                        case 2:
+                          placeColor = Colors.brown[300]!;
+                          break;
+                        default:
+                          placeColor = Theme.of(context).colorScheme.primary;
                       }
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -648,23 +752,35 @@ class _LeaderboardWidgetState extends State<_LeaderboardWidget> {
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  if (avatarPath != null && avatarPath.isNotEmpty)
+                                  if (avatarPath != null &&
+                                      avatarPath.isNotEmpty)
                                     CircleAvatar(
                                       radius: 22,
-                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
                                       backgroundImage: NetworkImage(avatarPath),
                                     )
                                   else
                                     CircleAvatar(
                                       radius: 22,
-                                      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                                      child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimaryContainer),
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .primaryContainer,
+                                      child: Icon(Icons.person,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onPrimaryContainer),
                                     ),
                                   const SizedBox(width: 14),
                                   Expanded(
                                     child: Text(
                                       username,
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.bold),
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -674,10 +790,14 @@ class _LeaderboardWidgetState extends State<_LeaderboardWidget> {
                             const SizedBox(width: 10),
                             Text(
                               '$statValue',
-                              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleLarge
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
                             ),
                           ],
                         ),
@@ -736,4 +856,4 @@ class _LeaderboardSortIcon extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -20,26 +20,25 @@ class Doka3Theme {
   static ThemeData get lightTheme {
     return ThemeData(
       colorScheme: ColorScheme(
-        brightness: Brightness.light,
-        primary: dotaGreen,
-        onPrimary: Colors.white,
-        secondary: dotaRadiantGold,
-        onSecondary: Colors.white,
-        error: dotaRed,
-        onError: Colors.white,
-        background: Colors.white,
-        onBackground: dotaLightGreen,
-        surface: Colors.grey[700]!,
-        onSurface: dotaDarkGray,
-        primaryContainer: dotaGreen,
-        onPrimaryContainer: Colors.white,
-        secondaryContainer: dotaRadiantGold,
-        onSecondaryContainer: Colors.white,
-        tertiaryContainer: dotaLightGreen,
-        onTertiaryContainer: Colors.white,
-        surfaceVariant: Colors.grey[700]!,
-        onSurfaceVariant: Colors.grey[700]!,
-      ),
+          brightness: Brightness.light,
+          primary: dotaGreen,
+          onPrimary: Colors.white,
+          secondary: dotaRadiantGold,
+          onSecondary: Colors.white,
+          error: dotaRed,
+          onError: Colors.white,
+          background: Colors.white,
+          onBackground: const Color.fromARGB(255, 183, 236, 185),
+          surface: dotaLightGreen,
+          onSurface: dotaDarkGray,
+          primaryContainer: const Color.fromARGB(255, 26, 121, 31),
+          onPrimaryContainer: Colors.white,
+          secondaryContainer: dotaRadiantGold,
+          onSecondaryContainer: Colors.white,
+          tertiaryContainer: dotaLightGreen,
+          onTertiaryContainer: Colors.white,
+          surfaceVariant: Colors.grey[700]!,
+          onSurfaceVariant: dotaLightGreen),
       cardTheme: const CardThemeData(
         elevation: 4,
         shape: RoundedRectangleBorder(
@@ -96,7 +95,8 @@ class Doka3Theme {
           fontWeight: FontWeight.w700,
           color: dotaGreen,
         ),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: dotaGreen),
+        headlineLarge: TextStyle(
+            fontSize: 22, fontWeight: FontWeight.w700, color: dotaGreen),
         headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
@@ -112,8 +112,10 @@ class Doka3Theme {
           fontWeight: FontWeight.w700,
           color: dotaDarkGray,
         ),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: dotaDarkGray),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dotaDarkGray),
+        titleMedium: TextStyle(
+            fontSize: 14, fontWeight: FontWeight.w700, color: dotaDarkGray),
+        titleSmall: TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w700, color: dotaDarkGray),
         bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
@@ -216,7 +218,8 @@ class Doka3Theme {
           fontWeight: FontWeight.w700,
           color: dotaRed,
         ),
-        headlineLarge: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: dotaRed),
+        headlineLarge: TextStyle(
+            fontSize: 22, fontWeight: FontWeight.w700, color: dotaRed),
         headlineMedium: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
@@ -232,8 +235,10 @@ class Doka3Theme {
           fontWeight: FontWeight.w700,
           color: Colors.white,
         ),
-        titleMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
-        titleSmall: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
+        titleMedium: TextStyle(
+            fontSize: 14, fontWeight: FontWeight.w700, color: Colors.white),
+        titleSmall: TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white),
         bodyLarge: TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w700,
@@ -256,4 +261,4 @@ class Doka3Theme {
       scaffoldBackgroundColor: dotaDarkGray,
     );
   }
-} 
+}

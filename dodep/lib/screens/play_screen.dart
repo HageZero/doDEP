@@ -50,7 +50,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   bool _showFinal = false;
   static const int _reelLength = 20;
-  static const int _centerIndex = _reelLength - 2; // центральная позиция для итогового символа
+  static const int _centerIndex =
+      _reelLength - 2; // центральная позиция для итогового символа
   String? _winMessage;
   bool _showWinMessage = false;
   bool _isBigWin = false;
@@ -109,7 +110,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
-    
+
     // Инициализируем контроллеры анимации
     _spinAnimationController = AnimationController(
       vsync: this,
@@ -237,7 +238,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _onStyleChanged() {
     if (!mounted) return;
-    
+
     // Используем Future.microtask для отложенного обновления
     Future.microtask(() {
       if (!mounted) return;
@@ -247,7 +248,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _updateSymbols() {
     if (!mounted) return;
-    
+
     final selectedStyle = _styleProvider.selectedStyleId;
 
     List<SlotSymbol> newSymbols;
@@ -288,26 +289,26 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           _symbols[0],
           _symbols[0],
         ];
-        _reelSymbols = List.generate(3, (_) => 
-          List.generate(_reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]));
+        _reelSymbols = List.generate(
+            3,
+            (_) => List.generate(_reelLength,
+                (_) => _symbols[_random.nextInt(_symbols.length)]));
       });
     }
   }
 
   void _updateSystemUI() {
     if (!mounted) return;
-    
+
     final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
     SystemChrome.setSystemUIOverlayStyle(
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: themeProvider.isDarkMode 
-            ? Brightness.light 
-            : Brightness.dark,
+        statusBarIconBrightness:
+            themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
         systemNavigationBarColor: Theme.of(context).colorScheme.background,
-        systemNavigationBarIconBrightness: themeProvider.isDarkMode 
-            ? Brightness.light 
-            : Brightness.dark,
+        systemNavigationBarIconBrightness:
+            themeProvider.isDarkMode ? Brightness.light : Brightness.dark,
       ),
     );
   }
@@ -343,7 +344,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Future<void> _saveDodepState() async {
     final prefs = await SharedPreferences.getInstance();
     if (_lastDodepTime != null) {
-      await prefs.setString(_lastDodepTimeKey, _lastDodepTime!.toIso8601String());
+      await prefs.setString(
+          _lastDodepTimeKey, _lastDodepTime!.toIso8601String());
       await prefs.setInt(_dodepCountKey, _dodepCount);
     } else {
       await prefs.remove(_lastDodepTimeKey);
@@ -362,8 +364,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       if (_lastDodepTime != null) {
         final now = DateTime.now();
         final difference = now.difference(_lastDodepTime!);
-        final remainingTime = const Duration(minutes: 3) - difference;
-        
+        final remainingTime = const Duration(minutes: 15) - difference;
+
         if (remainingTime.isNegative) {
           if (mounted) {
             setState(() {
@@ -377,7 +379,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
             setState(() {
               final minutes = remainingTime.inMinutes;
               final seconds = remainingTime.inSeconds % 60;
-              _dodepTimerText = 'Додеп: ${3 - _dodepCount}/3 (${minutes}:${seconds.toString().padLeft(2, '0')})';
+              _dodepTimerText =
+                  'Додеп: ${3 - _dodepCount}/3 (${minutes}:${seconds.toString().padLeft(2, '0')})';
             });
           }
         }
@@ -386,27 +389,33 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   void _checkBalanceForNotification() {
-     if (_balanceProvider.balance < 50 && !_isSpinning && !_showAddBalanceNotification && !_winAnimationController.isAnimating) {
-       Future.delayed(const Duration(seconds: 3), () {
-         if (mounted && _balanceProvider.balance < 50) {
-       setState(() {
-         _showAddBalanceNotification = true;
-             _isNotificationVisible = true;
-           });
-         }
-       });
-     } else if ((_balanceProvider.balance >= 50 || _isSpinning || _winAnimationController.isAnimating) && _showAddBalanceNotification) {
-        setState(() {
-          _isNotificationVisible = false;
-        });
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-        setState(() {
-          _showAddBalanceNotification = false;
-            });
-          }
-        });
-     }
+    if (_balanceProvider.balance < 50 &&
+        !_isSpinning &&
+        !_showAddBalanceNotification &&
+        !_winAnimationController.isAnimating) {
+      Future.delayed(const Duration(seconds: 3), () {
+        if (mounted && _balanceProvider.balance < 50) {
+          setState(() {
+            _showAddBalanceNotification = true;
+            _isNotificationVisible = true;
+          });
+        }
+      });
+    } else if ((_balanceProvider.balance >= 50 ||
+            _isSpinning ||
+            _winAnimationController.isAnimating) &&
+        _showAddBalanceNotification) {
+      setState(() {
+        _isNotificationVisible = false;
+      });
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _showAddBalanceNotification = false;
+          });
+        }
+      });
+    }
   }
 
   bool _canDodep() {
@@ -418,7 +427,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _showSadHorseAnimation() async {
     if (!mounted) return;
-    
+
     final overlay = Overlay.of(context);
     final overlayEntry = OverlayEntry(
       builder: (context) => Material(
@@ -448,7 +457,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     );
 
     overlay.insert(overlayEntry);
-    
+
     try {
       await _audioPlayer.stop(); // Останавливаем предыдущее воспроизведение
       await _audioPlayer.setVolume(2.0);
@@ -456,9 +465,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     } catch (e) {
       print('Ошибка воспроизведения звука: $e');
     }
-    
+
     await Future.delayed(const Duration(seconds: 4));
-    
+
     overlayEntry.remove();
   }
 
@@ -467,7 +476,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _showSadHorseAnimation();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Додеп будет доступен через ${_dodepTimerText.split('(')[1].split(')')[0]}'),
+          content: Text(
+              'Додеп будет доступен через ${_dodepTimerText.split('(')[1].split(')')[0]}'),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -533,21 +543,22 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   void _checkWin() async {
     final questsProvider = Provider.of<QuestsProvider>(context, listen: false);
-    if (_currentSymbols[0].name == _currentSymbols[1].name && 
+    if (_currentSymbols[0].name == _currentSymbols[1].name &&
         _currentSymbols[1].name == _currentSymbols[2].name) {
-      
       // Проверяем, является ли комбинация тремя бонусами
       if (_currentSymbols[0].name == 'bonus') {
         setState(() {
           _freeSpins += _isFreeSpin ? 2 : 10;
-          _winMessage = _isFreeSpin ? 'Бонус! +2 бесплатные прокрутки' : 'Бонус! 10 бесплатных прокруток';
+          _winMessage = _isFreeSpin
+              ? 'Бонус! +2 бесплатные прокрутки'
+              : 'Бонус! 10 бесплатных прокруток';
           _showWinMessage = true;
         });
-        
+
         if (!_isFreeSpin) {
           _startFreeSpins();
         }
-        
+
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) {
             setState(() {
@@ -585,7 +596,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       // Обычный джекпот
       int winMultiplier = _currentSymbols[0].specialMultiplier ?? 2;
       int winAmount = _currentBet * winMultiplier;
-      
+
       setState(() {
         _winAmount = winAmount;
         _isWin = true;
@@ -593,19 +604,20 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         _showWinMessage = true;
         _isBigWin = true;
       });
-      
+
       _winAnimationController.forward(from: 0.0);
       _rotationAnimationController.repeat(reverse: true);
-      
+
       // Обновляем баланс локально
-      final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+      final balanceProvider =
+          Provider.of<BalanceProvider>(context, listen: false);
       debugPrint('[PlayScreen] _checkWin: addBalance($winAmount)');
       balanceProvider.addBalance(winAmount);
 
       // Обновляем прогресс заданий
       questsProvider.updateQuestProgress('coins', winAmount);
       questsProvider.updateQuestProgress('jackpots', 1);
-      
+
       // Пытаемся обновить максимальный выигрыш в Firebase только если есть интернет
       if (!_isOffline) {
         try {
@@ -619,7 +631,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           debugPrint('Не удалось обновить максимальный выигрыш: $e');
         }
       }
-      
+
       Future.delayed(const Duration(seconds: 3), () {
         if (mounted) {
           setState(() {
@@ -643,9 +655,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           _currentBet += 50;
         });
       }
-    } else if (_currentSymbols[0].name == _currentSymbols[1].name || 
-               _currentSymbols[1].name == _currentSymbols[2].name || 
-               _currentSymbols[0].name == _currentSymbols[2].name) {
+    } else if (_currentSymbols[0].name == _currentSymbols[1].name ||
+        _currentSymbols[1].name == _currentSymbols[2].name ||
+        _currentSymbols[0].name == _currentSymbols[2].name) {
       // Два одинаковых символа
       int winAmount = _currentBet;
       setState(() {
@@ -655,15 +667,16 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
         _showWinMessage = true;
         _isBigWin = false;
       });
-      
+
       // Обновляем баланс локально
-      final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+      final balanceProvider =
+          Provider.of<BalanceProvider>(context, listen: false);
       debugPrint('[PlayScreen] _checkWin: addBalance($winAmount)');
       balanceProvider.addBalance(winAmount);
 
       // Обновляем прогресс заданий
       questsProvider.updateQuestProgress('coins', winAmount);
-      
+
       // Пытаемся обновить максимальный выигрыш в Firebase только если есть интернет
       if (!_isOffline) {
         try {
@@ -677,7 +690,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           debugPrint('Не удалось обновить максимальный выигрыш: $e');
         }
       }
-      
+
       Future.delayed(const Duration(seconds: 2), () {
         if (mounted) {
           setState(() {
@@ -717,13 +730,15 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
       // Сбросить прогресс задания lose
       _loseQuestProgress++;
-      questsProvider.updateQuestProgress('lose', _loseQuestProgress, absolute: true);
+      questsProvider.updateQuestProgress('lose', _loseQuestProgress,
+          absolute: true);
     }
 
     // Если это была бесплатная прокрутка (и не бонусная комбинация), уменьшаем счетчик и запускаем следующую
-    if (_isFreeSpin && !(_currentSymbols[0].name == 'bonus' && 
-        _currentSymbols[1].name == 'bonus' && 
-        _currentSymbols[2].name == 'bonus')) {
+    if (_isFreeSpin &&
+        !(_currentSymbols[0].name == 'bonus' &&
+            _currentSymbols[1].name == 'bonus' &&
+            _currentSymbols[2].name == 'bonus')) {
       setState(() {
         _freeSpins--;
       });
@@ -740,9 +755,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   }
 
   void _spinReels() {
-    final balanceProvider = Provider.of<BalanceProvider>(context, listen: false);
+    final balanceProvider =
+        Provider.of<BalanceProvider>(context, listen: false);
     final questsProvider = Provider.of<QuestsProvider>(context, listen: false);
-    debugPrint('[PlayScreen] _spinReels: текущий баланс: [33m${balanceProvider.balance}[0m');
+    debugPrint(
+        '[PlayScreen] _spinReels: текущий баланс: [33m${balanceProvider.balance}[0m');
     if (_isSpinning) return;
     if (!_isFreeSpin && balanceProvider.balance < _currentBet) {
       _checkBalanceForNotification();
@@ -820,7 +837,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
     // Обновляем символы для каждого барабана
     for (int i = 0; i < 3; i++) {
-      List<SlotSymbol> temp = List.generate(_reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]);
+      List<SlotSymbol> temp = List.generate(
+          _reelLength, (_) => _symbols[_random.nextInt(_symbols.length)]);
       temp[_centerIndex] = finalSymbols[i];
       _reelSymbols[i] = temp;
     }
@@ -904,8 +922,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     Text(
                       'Управление ставкой',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                     const SizedBox(height: 20),
                     Container(
@@ -916,10 +934,13 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       ),
                       child: Text(
                         'Текущая ставка: $_currentBet',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
-                        ),
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                ),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -931,12 +952,17 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         this.setState(() {});
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.error.withOpacity(0.1),
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .error
+                            .withOpacity(0.1),
                         foregroundColor: Theme.of(context).colorScheme.error,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 24, vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Theme.of(context).colorScheme.error),
+                          side: BorderSide(
+                              color: Theme.of(context).colorScheme.error),
                         ),
                       ),
                       child: const Text(
@@ -997,14 +1023,15 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   Widget _buildBetButton(int amount, StateSetter setDialogState) {
     final isPositive = amount > 0;
-    final color = isPositive 
-        ? Theme.of(context).colorScheme.primary 
+    final color = isPositive
+        ? Theme.of(context).colorScheme.primary
         : Theme.of(context).colorScheme.error;
-    
+
     return ElevatedButton(
       onPressed: () {
         setDialogState(() {
-          _currentBet = (_currentBet + amount).clamp(50, double.infinity).toInt();
+          _currentBet =
+              (_currentBet + amount).clamp(50, double.infinity).toInt();
         });
         setState(() {}); // Обновляем состояние основного виджета
       },
@@ -1029,7 +1056,9 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
 
   Widget _buildAddBalanceNotification(BuildContext context) {
     // Звук при первом появлении уведомления
-    if (_isNotificationVisible && !_wasAddBalanceNotificationVisible && _dodepCount == 0) {
+    if (_isNotificationVisible &&
+        !_wasAddBalanceNotificationVisible &&
+        _dodepCount == 0) {
       _depaAudioPlayer?.stop();
       _depaAudioPlayer = AudioPlayer();
       _depaAudioPlayer!.play(AssetSource('sounds/depai.mp3'));
@@ -1052,15 +1081,23 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                 scale: _isNotificationVisible ? 1.0 : 0.8,
                 child: AnimatedSlide(
                   duration: const Duration(milliseconds: 300),
-                  offset: _isNotificationVisible ? Offset.zero : const Offset(0, 0.1),
+                  offset: _isNotificationVisible
+                      ? Offset.zero
+                      : const Offset(0, 0.1),
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface.withOpacity(0.9),
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surface
+                          .withOpacity(0.9),
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.5),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.5),
                           blurRadius: 16,
                           spreadRadius: 4,
                         ),
@@ -1093,25 +1130,35 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ],
                         Text(
                           'додепался ты',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurface,
+                                fontWeight: FontWeight.bold,
+                              ),
                         ),
                         const SizedBox(height: 10),
                         Text(
                           'и что ты теперь будешь делать?',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurface
+                                        .withOpacity(0.8),
+                                  ),
                         ),
                         if (!_canDodep()) ...[
                           const SizedBox(height: 10),
                           Text(
                             'Додеп будет доступен через ${_dodepTimerText.split('(')[1].split(')')[0]}',
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
                           ),
                         ],
                         const SizedBox(height: 20),
@@ -1124,18 +1171,21 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            )
-                          ),
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primary,
+                              foregroundColor:
+                                  Theme.of(context).colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              )),
                           child: Text(
                             'ДОДЕП',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ],
@@ -1165,17 +1215,23 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                 height: 80,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: _isBigWin 
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.8)
-                      : Theme.of(context).colorScheme.primary,
+                    color: _isBigWin
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.8)
+                        : Theme.of(context).colorScheme.primary,
                     width: _isBigWin ? 3.0 : 2.0,
                   ),
                   borderRadius: BorderRadius.circular(12.0),
                   boxShadow: [
                     BoxShadow(
                       color: _isBigWin
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-                        : Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                          ? Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.5)
+                          : Theme.of(context)
+                              .colorScheme
+                              .primary
+                              .withOpacity(0.3),
                       blurRadius: _isBigWin ? 12 : 8,
                       spreadRadius: _isBigWin ? 4 : 2,
                     ),
@@ -1199,18 +1255,26 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             end: Alignment.bottomRight,
                             colors: [
                               _isBigWin
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                                : Colors.transparent,
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.2)
+                                  : Colors.transparent,
                               _isBigWin
-                                ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                                : Colors.transparent,
+                                  ? Theme.of(context)
+                                      .colorScheme
+                                      .primary
+                                      .withOpacity(0.1)
+                                  : Colors.transparent,
                             ],
                           ),
                         ),
                         child: Center(
                           child: _currentSymbols[index].imagePath.isNotEmpty
-                              ? Image.asset(_currentSymbols[index].imagePath, height: 60, width: 60, fit: BoxFit.contain)
-                              : Text(_currentSymbols[index].name, style: TextStyle(fontSize: 40)),
+                              ? Image.asset(_currentSymbols[index].imagePath,
+                                  height: 60, width: 60, fit: BoxFit.contain)
+                              : Text(_currentSymbols[index].name,
+                                  style: TextStyle(fontSize: 40)),
                         ),
                       ),
                     ],
@@ -1274,9 +1338,17 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             child: Container(
                               height: 80,
                               alignment: Alignment.center,
-                              child: _reelSymbols[index][symbolIndex].imagePath.isNotEmpty
-                                  ? Image.asset(_reelSymbols[index][symbolIndex].imagePath, height: 60, width: 60, fit: BoxFit.contain)
-                                  : Text(_reelSymbols[index][symbolIndex].name, style: TextStyle(fontSize: 40)),
+                              child: _reelSymbols[index][symbolIndex]
+                                      .imagePath
+                                      .isNotEmpty
+                                  ? Image.asset(
+                                      _reelSymbols[index][symbolIndex]
+                                          .imagePath,
+                                      height: 60,
+                                      width: 60,
+                                      fit: BoxFit.contain)
+                                  : Text(_reelSymbols[index][symbolIndex].name,
+                                      style: TextStyle(fontSize: 40)),
                             ),
                           ));
                         }
@@ -1309,7 +1381,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     Column(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16.0, vertical: 8.0),
                           decoration: BoxDecoration(
                             color: Color(0xFF2C2C2C),
                             borderRadius: BorderRadius.circular(12.0),
@@ -1320,19 +1393,24 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                           ),
                           child: Text(
                             'Казик',
-                            style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .displaySmall
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 2),
                         Builder(
                           builder: (context) {
                             // Настраиваемые параметры:
-                            const double lanternHeight = 170; // размер
-                            const double lanternTopOffset = -4; // вверх/вниз (отрицательное - ближе к тексту)
-                            const Alignment lanternAlignment = Alignment.center; // left, center, right
+                            const double lanternHeight = 125; // размер
+                            const double lanternTopOffset =
+                                -4; // вверх/вниз (отрицательное - ближе к тексту)
+                            const Alignment lanternAlignment =
+                                Alignment.center; // left, center, right
                             return Container(
                               alignment: lanternAlignment,
                               child: Transform.translate(
@@ -1354,46 +1432,54 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                     Text(
                       'Казик',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onBackground,
-                        fontWeight: FontWeight.bold,
-                      ),
+                            color: Theme.of(context).colorScheme.onBackground,
+                            fontWeight: FontWeight.bold,
+                          ),
                     ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0, vertical: 6.0),
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.primaryContainer,
                           borderRadius: BorderRadius.circular(20.0),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .primary
+                                  .withOpacity(0.2),
                               blurRadius: 4,
                               spreadRadius: 1,
                             ),
                           ],
                         ),
                         child: Consumer<BalanceProvider>(
-                          builder: (context, balanceProvider, _) =>
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Image.asset(
-                                  'assets/images/emerald.png',
-                                  height: 24,
-                                  width: 24,
-                                ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  '${balanceProvider.balance}',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
+                          builder: (context, balanceProvider, _) => Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Image.asset(
+                                'assets/images/emerald.png',
+                                height: 24,
+                                width: 24,
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '${balanceProvider.balance}',
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1401,7 +1487,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         onTap: () {
                           showDialog(
                             context: context,
-                            builder: (context) => DailyQuestsDialog(onBonus: _startBonusFreeSpins),
+                            builder: (context) => DailyQuestsDialog(
+                                onBonus: _startBonusFreeSpins),
                           );
                         },
                         child: Stack(
@@ -1413,7 +1500,10 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                                 borderRadius: BorderRadius.circular(18),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.1),
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),
@@ -1435,15 +1525,22 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                                       width: 12,
                                       height: 12,
                                       decoration: BoxDecoration(
-                                        color: Theme.of(context).colorScheme.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                         shape: BoxShape.circle,
                                         border: Border.all(
-                                          color: Theme.of(context).colorScheme.surface,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .surface,
                                           width: 2,
                                         ),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withOpacity(0.3),
                                             blurRadius: 4,
                                             spreadRadius: 1,
                                           ),
@@ -1466,7 +1563,12 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             child: Image.asset(
                               _styleProvider.selectedStyleId == 'fantasy_gacha'
                                   ? 'assets/images/chest.png'
-                                  : 'assets/images/luckyblock.png',
+                                  : _styleProvider.selectedStyleId == 'doka3'
+                                      ? 'assets/images/io.png'
+                                      : _styleProvider.selectedStyleId ==
+                                              'minecraft'
+                                          ? 'assets/images/luckychest.png'
+                                          : 'assets/images/luckyblock.png',
                               width: 70,
                               height: 70,
                             ),
@@ -1490,13 +1592,19 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                             duration: const Duration(milliseconds: 500),
                             opacity: _showWinMessage ? 1.0 : 0.0,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 10),
                               decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primaryContainer,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                                 borderRadius: BorderRadius.circular(20),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .primary
+                                        .withOpacity(0.3),
                                     blurRadius: 8,
                                     spreadRadius: 2,
                                   ),
@@ -1504,22 +1612,33 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                               ),
                               child: Text(
                                 _winMessage ?? '',
-                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                  color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleLarge
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                               ),
                             ),
                           ),
                         const SizedBox(height: 20),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0, vertical: 6.0),
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.secondaryContainer,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .secondaryContainer,
                             borderRadius: BorderRadius.circular(20.0),
                             boxShadow: [
                               BoxShadow(
-                                color: Theme.of(context).colorScheme.secondary.withOpacity(0.2),
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .secondary
+                                    .withOpacity(0.2),
                                 blurRadius: 4,
                                 spreadRadius: 1,
                               ),
@@ -1527,10 +1646,15 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                           ),
                           child: Text(
                             'Ставка: $_currentBet',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.onSecondaryContainer,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSecondaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -1538,58 +1662,80 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                           height: 100,
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(3, (index) => Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                              child: _buildReel(index),
-                            )),
+                            children: List.generate(
+                                3,
+                                (index) => Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 4.0),
+                                      child: _buildReel(index),
+                                    )),
                           ),
                         ),
                         const SizedBox(height: 30),
                         ElevatedButton(
-                          onPressed: (_isSpinning || _winAnimationController.isAnimating || _isFreeSpin) 
-                              ? null 
+                          onPressed: (_isSpinning ||
+                                  _winAnimationController.isAnimating ||
+                                  _isFreeSpin)
+                              ? null
                               : _spinReels,
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                             elevation: 4,
                           ),
                           child: Text(
-                            _isSpinning 
-                                ? 'Крутится...' 
-                                : _isFreeSpin 
-                                    ? 'Бесплатные прокрутки' 
+                            _isSpinning
+                                ? 'Крутится...'
+                                : _isFreeSpin
+                                    ? 'Бесплатные прокрутки'
                                     : 'Крутить! (${_currentBet})',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 12),
                         ElevatedButton(
-                          onPressed: (_isFreeSpin || _balanceProvider.balance <= 0) 
-                              ? null 
-                              : _showDepositDialog,
+                          onPressed:
+                              (_isFreeSpin || _balanceProvider.balance <= 0)
+                                  ? null
+                                  : _showDepositDialog,
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 32, vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                             ),
                             elevation: 4,
-                            backgroundColor: (_isFreeSpin || _balanceProvider.balance <= 0)
+                            backgroundColor: (_isFreeSpin ||
+                                    _balanceProvider.balance <= 0)
                                 ? Theme.of(context).colorScheme.surfaceVariant
-                                : Theme.of(context).colorScheme.primaryContainer,
+                                : Theme.of(context)
+                                    .colorScheme
+                                    .primaryContainer,
                           ),
                           child: Text(
                             'Депнуть',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: (_isFreeSpin || _balanceProvider.balance <= 0)
-                                  ? Theme.of(context).colorScheme.onSurfaceVariant
-                                  : Theme.of(context).colorScheme.onPrimaryContainer,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  color: (_isFreeSpin ||
+                                          _balanceProvider.balance <= 0)
+                                      ? Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant
+                                      : Theme.of(context)
+                                          .colorScheme
+                                          .onPrimaryContainer,
+                                ),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -1598,20 +1744,24 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                   ),
                   if (_showAddBalanceNotification)
                     _buildAddBalanceNotification(context),
-                  if (_showSadHorse)
-                    _buildSadHorseAnimation(),
+                  if (_showSadHorse) _buildSadHorseAnimation(),
                   if (_dodepTimerText.isNotEmpty && _dodepCount > 0)
                     Positioned(
                       top: 0,
                       right: 16,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0, vertical: 6.0),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.tertiaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(20.0),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.tertiary.withOpacity(0.2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .tertiary
+                                  .withOpacity(0.2),
                               blurRadius: 6,
                               spreadRadius: 1,
                             ),
@@ -1619,25 +1769,35 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                         child: Text(
                           _dodepTimerText,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onTertiaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onTertiaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                     ),
                   if (_isFreeSpin)
                     Positioned(
-                      top: (_dodepTimerText.isNotEmpty && _dodepCount > 0) ? 40 : 0,
+                      top: (_dodepTimerText.isNotEmpty && _dodepCount > 0)
+                          ? 40
+                          : 0,
                       right: 16,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12.0, vertical: 6.0),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.tertiaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.tertiaryContainer,
                           borderRadius: BorderRadius.circular(20.0),
                           boxShadow: [
                             BoxShadow(
-                              color: Theme.of(context).colorScheme.tertiary.withOpacity(0.2),
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .tertiary
+                                  .withOpacity(0.2),
                               blurRadius: 6,
                               spreadRadius: 1,
                             ),
@@ -1645,10 +1805,13 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         ),
                         child: Text(
                           'Бесплатные прокрутки: $_freeSpins',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onTertiaryContainer,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onTertiaryContainer,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                         ),
                       ),
                     ),
@@ -1726,7 +1889,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _startBonusFreeSpins();
       _showRewardMessage('БОНУСКА', color: Colors.purpleAccent);
     } else {
-      Provider.of<BalanceProvider>(context, listen: false).addBalance(reward as int);
+      Provider.of<BalanceProvider>(context, listen: false)
+          .addBalance(reward as int);
       _showRewardMessage('+$reward к балансу!', color: Colors.green);
     }
   }
@@ -1802,7 +1966,8 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Future<void> _saveLuckyBlockTime() async {
     final prefs = await SharedPreferences.getInstance();
     if (_lastLuckyBlockTime != null) {
-      await prefs.setString(_lastLuckyBlockTimeKey, _lastLuckyBlockTime!.toIso8601String());
+      await prefs.setString(
+          _lastLuckyBlockTimeKey, _lastLuckyBlockTime!.toIso8601String());
     }
   }
 
@@ -1821,17 +1986,17 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     _saveDodepState();
     _audioPlayer.dispose();
     _autoSpinTimer?.cancel();
-    
+
     // Отписываемся от StyleProvider перед удалением виджета
     _styleProvider.removeListener(_onStyleChanged);
-    
+
     _depaAudioPlayer?.stop();
     _depaAudioPlayer?.dispose();
-    
+
     _luckyBlockTimer?.cancel();
-    
+
     _saveLuckyBlockTime();
-    
+
     super.dispose();
   }
-} 
+}

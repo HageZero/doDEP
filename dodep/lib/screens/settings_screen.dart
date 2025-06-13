@@ -15,7 +15,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStateMixin {
+class _SettingsScreenState extends State<SettingsScreen>
+    with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late VideoPlayerController _videoController;
@@ -26,12 +27,12 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    
+
     _scaleAnimation = CurvedAnimation(
       parent: _animationController,
       curve: Curves.easeInOut,
@@ -88,7 +89,8 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
 
   // Добавляем обработчик кнопки назад
   Future<bool> _onWillPop() async {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     if (languageProvider.showVideo) {
       languageProvider.hideVideo();
       _videoController.pause();
@@ -99,7 +101,8 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
   }
 
   void _handleLanguageToggle(bool value) {
-    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final languageProvider =
+        Provider.of<LanguageProvider>(context, listen: false);
     languageProvider.toggleLanguage();
   }
 
@@ -117,8 +120,21 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
     final languageProvider = Provider.of<LanguageProvider>(context);
     final authService = Provider.of<AuthService>(context);
 
+    // Запускаем анимацию текста при его появлении
+    if (languageProvider.showMessage) {
+      if (_textAnimationController.status == AnimationStatus.dismissed) {
+        _textAnimationController.forward(from: 0.0);
+      }
+    } else {
+      if (_textAnimationController.status != AnimationStatus.dismissed) {
+        _textAnimationController.reset();
+      }
+    }
+
     // Добавляем эффект для воспроизведения видео при его появлении
-    if (languageProvider.showVideo && _videoController.value.isInitialized && !_videoController.value.isPlaying) {
+    if (languageProvider.showVideo &&
+        _videoController.value.isInitialized &&
+        !_videoController.value.isPlaying) {
       _videoController.play();
       _textAnimationController.forward(from: 0.0);
     }
@@ -138,10 +154,13 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                     children: [
                       Text(
                         'Настройки',
-                        style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onBackground,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .displaySmall
+                            ?.copyWith(
+                              color: Theme.of(context).colorScheme.onBackground,
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       const SizedBox(height: 24),
                       // Переключатель темы
@@ -150,14 +169,20 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                         color: Theme.of(context).colorScheme.surface,
                         child: ListTile(
                           leading: Icon(
-                            themeProvider.isDarkMode ? Icons.dark_mode : Icons.light_mode,
+                            themeProvider.isDarkMode
+                                ? Icons.dark_mode
+                                : Icons.light_mode,
                             color: Theme.of(context).colorScheme.primary,
                           ),
                           title: Text(
                             'Темная тема',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                               color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
                           ),
                           trailing: Switch(
                             value: themeProvider.isDarkMode,
@@ -178,12 +203,17 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                           ),
                           title: Text(
                             'Английский язык',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                               color: Theme.of(context).colorScheme.onSurface,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
                           ),
                           trailing: Switch(
-                            value: Provider.of<LanguageProvider>(context).isEnglish,
+                            value: Provider.of<LanguageProvider>(context)
+                                .isEnglish,
                             onChanged: _handleLanguageToggle,
                             activeColor: Theme.of(context).colorScheme.primary,
                           ),
@@ -197,13 +227,19 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                         child: ListTile(
                           leading: Icon(
                             Icons.logout,
-                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
                           ),
                           title: Text(
                             'Выйти из аккаунта',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.onErrorContainer,
-                            ),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleLarge
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onErrorContainer,
+                                ),
                           ),
                           onTap: () async {
                             await authService.logout();
@@ -219,17 +255,6 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               ),
             ),
 
-            // Затемнение фона при показе видео
-            if (languageProvider.showVideo)
-              Positioned.fill(
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-                  child: Container(
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ),
-              ),
-
             // Текст поверх всего
             if (languageProvider.showMessage)
               Positioned.fill(
@@ -243,7 +268,10 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                         child: Center(
                           child: Text(
                             'чума suck my balls',
-                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                            style: Theme.of(context)
+                                .textTheme
+                                .displayLarge
+                                ?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               shadows: [
@@ -262,6 +290,17 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                 ),
               ),
 
+            // Затемнение фона при показе видео
+            if (languageProvider.showVideo)
+              Positioned.fill(
+                child: BackdropFilter(
+                  filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ),
+              ),
+
             // Видео поверх всего
             if (languageProvider.showVideo)
               Positioned.fill(
@@ -274,7 +313,8 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
               ),
 
             // Кнопка Автор внизу справа с анимацией
-            Positioned(
+            if (!languageProvider.showVideo)
+              Positioned(
               right: 16.0,
               bottom: 16.0,
               child: ScaleTransition(
@@ -283,10 +323,15 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
                   onPressed: () {
                     _launchUrl('tg://resolve?domain=kagayakisan');
                   },
-                  label: Text('Автор', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).colorScheme.onPrimary),),
+                  label: Text(
+                    'Автор',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onPrimary),
+                  ),
                   icon: CircleAvatar(
                     radius: 18,
-                    backgroundImage: AssetImage('assets/images/author_avatar.png'),
+                    backgroundImage:
+                        AssetImage('assets/images/author_avatar.png'),
                   ),
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
@@ -299,4 +344,4 @@ class _SettingsScreenState extends State<SettingsScreen> with TickerProviderStat
       ),
     );
   }
-} 
+}
