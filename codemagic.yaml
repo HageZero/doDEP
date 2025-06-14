@@ -1,38 +1,27 @@
 workflows:
   ios-build:
-    name: iOS Build
+    name: iOS Build for AltStore
     environment:
       flutter: stable
       xcode: latest
     scripts:
-      - name: Clean previous pods
-        script: |
-          cd $CM_BUILD_DIR/ios
-          rm -rf Pods Podfile.lock
-
       - name: Install Flutter dependencies
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
-      - name: Install iOS pods
-        script: |
-          cd $CM_BUILD_DIR/ios
-          pod install --verbose
-
-      - name: Flutter build iOS
+      - name: Build IPA
         script: |
           cd $CM_BUILD_DIR
-          flutter build ios --release --no-codesign
+          flutter build ipa --no-codesign
 
     artifacts:
-      - build/ios/iphoneos/*.ipa
-      - build/ios/iphoneos/Runner.app
+      - build/ios/ipa/*.ipa
 
     publishing:
       email:
         recipients:
-          - andronix.r@gmail.com
+          - lonelyonmoon@gmail.com
         notify:
           success: true
           failure: true
