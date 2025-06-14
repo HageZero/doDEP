@@ -2,33 +2,23 @@ workflows:
   ios-build:
     name: iOS Build
     environment:
-      vars:
-        FLUTTER_BUILD_NAME: "1.0.0"
-        FLUTTER_BUILD_NUMBER: "1"
       flutter: stable
       xcode: latest
     scripts:
+      - name: Clean previous pods
+        script: |
+          cd $CM_BUILD_DIR/ios
+          rm -rf Pods Podfile.lock
+
       - name: Install Flutter dependencies
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
-      - name: Generate flutter_export_environment
+      - name: Install iOS pods
         script: |
-          cd $CM_BUILD_DIR/ios/Flutter
-          # Перезаписываем файл в Ruby‑совместимом формате:
-          printf "ENV['FLUTTER_ROOT'] = '%s'\n" "$FLUTTER_ROOT" > flutter_export_environment
-          printf "ENV['FLUTTER_APPLICATION_PATH'] = '%s'\n" "$CM_BUILD_DIR" >> flutter_export_environment
-          printf "ENV['COCOAPODS_PARALLEL_CODE_SIGN'] = 'true'\n" >> flutter_export_environment
-          printf "ENV['FLUTTER_TARGET'] = 'lib/main.dart'\n" >> flutter_export_environment
-          printf "ENV['FLUTTER_BUILD_DIR'] = 'build'\n" >> flutter_export_environment
-          printf "ENV['SYMROOT'] = '${SOURCE_ROOT}/../build/ios'\n" >> flutter_export_environment
-          printf "ENV['FLUTTER_BUILD_NAME'] = '%s'\n" "$FLUTTER_BUILD_NAME" >> flutter_export_environment
-          printf "ENV['FLUTTER_BUILD_NUMBER'] = '%s'\n" "$FLUTTER_BUILD_NUMBER" >> flutter_export_environment
-          printf "ENV['DART_OBFUSCATION'] = 'false'\n" >> flutter_export_environment
-          printf "ENV['TRACK_WIDGET_CREATION'] = 'true'\n" >> flutter_export_environment
-          printf "ENV['TREE_SHAKE_ICONS'] = 'false'\n" >> flutter_export_environment
-          printf "ENV['PACKAGE_CONFIG'] = '.dart_tool/package_config.json'\n" >> flutter_export_environment
+          cd $CM_BUILD_DIR/ios
+          pod install
 
       - name: Flutter build iOS
         script: |
@@ -38,7 +28,6 @@ workflows:
     artifacts:
       - build/ios/iphoneos/*.ipa
       - build/ios/iphoneos/Runner.app
-
     publishing:
       email:
         recipients:
