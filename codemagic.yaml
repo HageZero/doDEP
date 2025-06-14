@@ -10,10 +10,17 @@ workflows:
           cd $CM_BUILD_DIR
           flutter pub get
 
-      - name: Build IPA
+      - name: Build iOS Archive
         script: |
           cd $CM_BUILD_DIR
           flutter build ipa --no-codesign
+
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/ios/archive/Runner.xcarchive \
+            -exportOptionsPlist ios/ExportOptions.plist \
+            -exportPath build/ios/ipa
 
     artifacts:
       - build/ios/ipa/*.ipa
