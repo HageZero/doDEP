@@ -3,13 +3,13 @@
 <plist version="1.0">
 <dict>
     <key>method</key>
-    <string>ad-hoc</string>
-    <key>compileBitcode</key>
-    <false/>
+    <string>development</string>
     <key>signingStyle</key>
     <string>manual</string>
     <key>stripSwiftSymbols</key>
     <true/>
+    <key>compileBitcode</key>
+    <false/>
     <key>thinning</key>
     <string>&lt;none&gt;</string>
 </dict>
