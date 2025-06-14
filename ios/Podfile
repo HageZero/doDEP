@@ -1,34 +1,31 @@
 platform :ios, '13.0'
+use_frameworks! :linkage => :static
+use_modular_headers!
 
-# Отключаем статистику CocoaPods
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
-# Путь к flutter внутри CI
-def flutter_root
-  generated_xcode_build_settings_path = File.expand_path(File.join('Pods', 'Target Support Files', 'Pods-Runner', 'Pods-Runner.release.xcconfig'))
-  unless File.exist?(generated_xcode_build_settings_path)
-    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
-  end
-  File.foreach(generated_xcode_build_settings_path) do |line|
-    matches = line.match(/FLUTTER_ROOT\=(.*)/)
-    return matches[1].strip if matches
-  end
-  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}"
-end
-
-# Подключаем helper из Flutter SDK
+# 1) Определяем flutter_root
 flutter_root = ENV['FLUTTER_ROOT'] || '/Users/builder/programs/flutter'
-load File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb')
+
+# 2) Загружаем podhelper.rb из Flutter SDK
+helper = File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb')
+unless File.exist?(helper)
+  raise "Cannot find #{helper}; make sure FLUTTER_ROOT is correct"
+end
+load helper
+
+# 3) Общая инициализация
 flutter_ios_podfile_setup
 
 target 'Runner' do
-  use_frameworks!
-  use_modular_headers!
-
-  # Здесь подключаются все iOS-поды из pubspec.yaml
+  # Подключаем все ваши Flutter-плагины
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
+# 4) Post-install: вместо flutter_post_install — используем flutter_additional_ios_build_settings
 post_install do |installer|
-  flutter_post_install(installer)
+  installer.pods_project.targets.each do |target|
+    # Устанавливаем стандартные iOS‑настройки из Flutter
+    flutter_additional_ios_build_settings(target)
+  end
 end
