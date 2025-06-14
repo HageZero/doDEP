@@ -1,26 +1,33 @@
-# ios/Podfile
-# Generated manually because Flutter running on Windows does not create a Podfile.
-# This file is required for Codemagic/iOS builds.
-
 platform :ios, '13.0'
-use_frameworks! :linkage => :static
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+# Отключаем статистику CocoaPods
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
-project 'Runner', {
-  'Debug' => :debug,
-  'Profile' => :release,
-  'Release' => :release,
-}
-
-# Defining a helper method to integrate Flutter pods
-def flutter_install
-  env_file = File.join(__dir__, 'Flutter', 'flutter_export_environment')
-  load(env_file) if File.exist?(env_file)
-  system('ruby', File.join(File.dirname(__FILE__), 'Flutter', 'podhelper.rb'))
+# Путь к flutter внутри CI
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('Pods', 'Target Support Files', 'Pods-Runner', 'Pods-Runner.release.xcconfig'))
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}"
 end
 
+# Подключаем helper из Flutter SDK
+load File.join(__dir__, 'Flutter', 'podhelper.rb')
+flutter_ios_podfile_setup
+
 target 'Runner' do
-  flutter_install
+  use_frameworks!
+  use_modular_headers!
+
+  # Здесь подключаются все iOS-поды из pubspec.yaml
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+end
+
+post_install do |installer|
+  flutter_post_install(installer)
 end
