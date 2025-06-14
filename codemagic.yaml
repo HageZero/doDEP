@@ -8,35 +8,36 @@ workflows:
       flutter: stable
       xcode: latest
     scripts:
-      - name: Install dependencies
+      - name: Install Flutter dependencies
         script: |
+          cd $CM_BUILD_DIR
           flutter pub get
 
       - name: Generate flutter_export_environment
         script: |
           cd $CM_BUILD_DIR/ios/Flutter
-          echo "FLUTTER_ROOT=$FLUTTER_ROOT" > flutter_export_environment
-          echo "FLUTTER_APPLICATION_PATH=$CM_BUILD_DIR" >> flutter_export_environment
-          echo "COCOAPODS_PARALLEL_CODE_SIGN=true" >> flutter_export_environment
-          echo "FLUTTER_TARGET=lib/main.dart" >> flutter_export_environment
-          echo "FLUTTER_BUILD_DIR=build" >> flutter_export_environment
-          echo "SYMROOT=\${SOURCE_ROOT}/../build/ios" >> flutter_export_environment
-          echo "FLUTTER_BUILD_NAME=$FLUTTER_BUILD_NAME" >> flutter_export_environment
-          echo "FLUTTER_BUILD_NUMBER=$FLUTTER_BUILD_NUMBER" >> flutter_export_environment
-          echo "DART_OBFUSCATION=false" >> flutter_export_environment
-          echo "TRACK_WIDGET_CREATION=true" >> flutter_export_environment
-          echo "TREE_SHAKE_ICONS=false" >> flutter_export_environment
-          echo "PACKAGE_CONFIG=.dart_tool/package_config.json" >> flutter_export_environment
+          # Перезаписываем файл в Ruby‑совместимом формате:
+          printf "ENV['FLUTTER_ROOT'] = '%s'\n" "$FLUTTER_ROOT" > flutter_export_environment
+          printf "ENV['FLUTTER_APPLICATION_PATH'] = '%s'\n" "$CM_BUILD_DIR" >> flutter_export_environment
+          printf "ENV['COCOAPODS_PARALLEL_CODE_SIGN'] = 'true'\n" >> flutter_export_environment
+          printf "ENV['FLUTTER_TARGET'] = 'lib/main.dart'\n" >> flutter_export_environment
+          printf "ENV['FLUTTER_BUILD_DIR'] = 'build'\n" >> flutter_export_environment
+          printf "ENV['SYMROOT'] = '${SOURCE_ROOT}/../build/ios'\n" >> flutter_export_environment
+          printf "ENV['FLUTTER_BUILD_NAME'] = '%s'\n" "$FLUTTER_BUILD_NAME" >> flutter_export_environment
+          printf "ENV['FLUTTER_BUILD_NUMBER'] = '%s'\n" "$FLUTTER_BUILD_NUMBER" >> flutter_export_environment
+          printf "ENV['DART_OBFUSCATION'] = 'false'\n" >> flutter_export_environment
+          printf "ENV['TRACK_WIDGET_CREATION'] = 'true'\n" >> flutter_export_environment
+          printf "ENV['TREE_SHAKE_ICONS'] = 'false'\n" >> flutter_export_environment
+          printf "ENV['PACKAGE_CONFIG'] = '.dart_tool/package_config.json'\n" >> flutter_export_environment
 
       - name: Flutter build iOS
         script: |
+          cd $CM_BUILD_DIR
           flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/iphoneos/*.ipa
       - build/ios/iphoneos/Runner.app
-      - build/ios/Build/Products/Release-iphoneos/*.app
-      - flutter_drive.log
 
     publishing:
       email:
