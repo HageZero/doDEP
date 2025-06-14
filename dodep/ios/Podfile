@@ -1,0 +1,24 @@
+# ios/Podfile
+# Generated manually because Flutter running on Windows does not create a Podfile.
+# This file is required for Codemagic/iOS builds.
+
+platform :ios, '13.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+# Defining a helper method to integrate Flutter pods
+def flutter_install
+  load File.join(File.dirname(__FILE__), 'Flutter', 'flutter_export_environment')
+  system('ruby', File.join(File.dirname(__FILE__), 'Flutter', 'podhelper.rb'))
+end
+
+target 'Runner' do
+  flutter_install
+end
