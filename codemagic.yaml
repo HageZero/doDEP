@@ -5,21 +5,45 @@ workflows:
       flutter: stable
       xcode: latest
     scripts:
+      # 1) Удаляем старые Pods
       - name: Clean previous pods
         script: |
           cd $CM_BUILD_DIR/ios
           rm -rf Pods Podfile.lock
 
+      # 2) Подтягиваем Dart‑зависимости
       - name: Install Flutter dependencies
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
 
+      # 3) Генерируем flutter_export_environment
+      - name: Generate flutter_export_environment
+        script: |
+          cd $CM_BUILD_DIR/ios/Flutter
+          mkdir -p .  
+          cat > flutter_export_environment <<EOF
+FLUTTER_ROOT=$FLUTTER_ROOT
+FLUTTER_APPLICATION_PATH=$CM_BUILD_DIR
+COCOAPODS_PARALLEL_CODE_SIGN=true
+FLUTTER_TARGET=lib/main.dart
+FLUTTER_BUILD_DIR=build
+SYMROOT=\${SOURCE_ROOT}/../build/ios
+FLUTTER_BUILD_NAME=$FLUTTER_BUILD_NAME
+FLUTTER_BUILD_NUMBER=$FLUTTER_BUILD_NUMBER
+DART_OBFUSCATION=false
+TRACK_WIDGET_CREATION=true
+TREE_SHAKE_ICONS=false
+PACKAGE_CONFIG=.dart_tool/package_config.json
+EOF
+
+      # 4) Устанавливаем iOS pods
       - name: Install iOS pods
         script: |
           cd $CM_BUILD_DIR/ios
-          pod install
+          pod install --verbose
 
+      # 5) Сборка iOS
       - name: Flutter build iOS
         script: |
           cd $CM_BUILD_DIR
@@ -28,6 +52,7 @@ workflows:
     artifacts:
       - build/ios/iphoneos/*.ipa
       - build/ios/iphoneos/Runner.app
+
     publishing:
       email:
         recipients:
@@ -35,3 +60,4 @@ workflows:
         notify:
           success: true
           failure: true
+
