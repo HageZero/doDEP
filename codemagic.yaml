@@ -18,23 +18,23 @@ workflows:
           cd $CM_BUILD_DIR
           flutter pub get
 
-      - name: Generate flutter_export_environment (Ruby format)
+      - name: Generate flutter_export_environment (pure Ruby)
         script: |
           cd $CM_BUILD_DIR/ios/Flutter
           mkdir -p .
-          cat > flutter_export_environment <<'EOF'
-ENV['FLUTTER_ROOT'] = '$FLUTTER_ROOT'
-ENV['FLUTTER_APPLICATION_PATH'] = '$CM_BUILD_DIR'
-ENV['COCOAPODS_PARALLEL_CODE_SIGN'] = 'true'
-ENV['FLUTTER_TARGET'] = 'lib/main.dart'
-ENV['FLUTTER_BUILD_DIR'] = 'build'
-ENV['SYMROOT'] = '${SOURCE_ROOT}/../build/ios'
-ENV['FLUTTER_BUILD_NAME'] = '$FLUTTER_BUILD_NAME'
-ENV['FLUTTER_BUILD_NUMBER'] = '$FLUTTER_BUILD_NUMBER'
-ENV['DART_OBFUSCATION'] = 'false'
-ENV['TRACK_WIDGET_CREATION'] = 'true'
-ENV['TREE_SHAKE_ICONS'] = 'false'
-ENV['PACKAGE_CONFIG'] = '.dart_tool/package_config.json'
+          cat <<'EOF' > flutter_export_environment
+ENV['FLUTTER_ROOT']               = '$FLUTTER_ROOT'
+ENV['FLUTTER_APPLICATION_PATH']   = '$CM_BUILD_DIR'
+ENV['COCOAPODS_PARALLEL_CODE_SIGN']= 'true'
+ENV['FLUTTER_TARGET']             = 'lib/main.dart'
+ENV['FLUTTER_BUILD_DIR']          = 'build'
+ENV['SYMROOT']                    = '${SOURCE_ROOT}/../build/ios'
+ENV['FLUTTER_BUILD_NAME']         = '$FLUTTER_BUILD_NAME'
+ENV['FLUTTER_BUILD_NUMBER']       = '$FLUTTER_BUILD_NUMBER'
+ENV['DART_OBFUSCATION']           = 'false'
+ENV['TRACK_WIDGET_CREATION']      = 'true'
+ENV['TREE_SHAKE_ICONS']           = 'false'
+ENV['PACKAGE_CONFIG']             = '.dart_tool/package_config.json'
 EOF
 
       - name: Install iOS pods
