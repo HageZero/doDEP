@@ -3,7 +3,7 @@
 # This file is required for Codemagic/iOS builds.
 
 platform :ios, '13.0'
-use_frameworks!
+use_frameworks! :linkage => :static
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
