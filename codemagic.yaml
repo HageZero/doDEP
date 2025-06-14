@@ -4,9 +4,6 @@ workflows:
     environment:
       flutter: stable
       xcode: latest
-      vars:
-        FLUTTER_BUILD_NAME: "1.0.0"
-        FLUTTER_BUILD_NUMBER: "1"
     scripts:
       - name: Clean previous pods
         script: |
@@ -17,25 +14,6 @@ workflows:
         script: |
           cd $CM_BUILD_DIR
           flutter pub get
-
-      - name: Generate flutter_export_environment (pure Ruby)
-        script: |
-          cd $CM_BUILD_DIR/ios/Flutter
-          mkdir -p .
-          cat <<'EOF' > flutter_export_environment
-            ENV['FLUTTER_ROOT']               = '$FLUTTER_ROOT'
-            ENV['FLUTTER_APPLICATION_PATH']   = '$CM_BUILD_DIR'
-            ENV['COCOAPODS_PARALLEL_CODE_SIGN']= 'true'
-            ENV['FLUTTER_TARGET']             = 'lib/main.dart'
-            ENV['FLUTTER_BUILD_DIR']          = 'build'
-            ENV['SYMROOT']                    = '${SOURCE_ROOT}/../build/ios'
-            ENV['FLUTTER_BUILD_NAME']         = '$FLUTTER_BUILD_NAME'
-            ENV['FLUTTER_BUILD_NUMBER']       = '$FLUTTER_BUILD_NUMBER'
-            ENV['DART_OBFUSCATION']           = 'false'
-            ENV['TRACK_WIDGET_CREATION']      = 'true'
-            ENV['TREE_SHAKE_ICONS']           = 'false'
-            ENV['PACKAGE_CONFIG']             = '.dart_tool/package_config.json'
-            EOF
 
       - name: Install iOS pods
         script: |
@@ -54,7 +32,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - your-email@example.com
+          - andronix.r@gmail.com
         notify:
           success: true
           failure: true

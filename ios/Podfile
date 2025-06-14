@@ -16,7 +16,8 @@ project 'Runner', {
 
 # Defining a helper method to integrate Flutter pods
 def flutter_install
-  load File.join(File.dirname(__FILE__), 'Flutter', 'flutter_export_environment')
+  env_file = File.join(__dir__, 'Flutter', 'flutter_export_environment')
+  load(env_file) if File.exist?(env_file)
   system('ruby', File.join(File.dirname(__FILE__), 'Flutter', 'podhelper.rb'))
 end
 
