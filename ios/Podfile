@@ -17,7 +17,8 @@ def flutter_root
 end
 
 # Подключаем helper из Flutter SDK
-load File.join(__dir__, 'Flutter', 'podhelper.rb')
+flutter_root = ENV['FLUTTER_ROOT'] || '/Users/builder/programs/flutter'
+load File.join(flutter_root, 'packages', 'flutter_tools', 'bin', 'podhelper.rb')
 flutter_ios_podfile_setup
 
 target 'Runner' do
