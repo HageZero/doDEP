@@ -1,18 +1,9 @@
 workflows:
   ios-workflow:
-    name: Build iOS without Code Signing
-    max_build_duration: 60
-    instance_type: mac_mini_m1
+    name: Build iOS App
     environment:
       flutter: stable
       xcode: latest
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: "*"
-          include: true
-          source: true
     scripts:
       - name: Install Flutter dependencies
         script: |
@@ -22,28 +13,26 @@ workflows:
       - name: Generate flutter_export_environment
         script: |
           cd $CM_BUILD_DIR/ios/Flutter
-          echo "FLUTTER_ROOT=$FLUTTER_ROOT" > flutter_export_environment
-          echo "FLUTTER_APPLICATION_PATH=$CM_BUILD_DIR" >> flutter_export_environment
-          echo "COCOAPODS_PARALLEL_CODE_SIGN=true" >> flutter_export_environment
-          echo "FLUTTER_TARGET=lib/main.dart" >> flutter_export_environment
-          echo "FLUTTER_BUILD_DIR=build" >> flutter_export_environment
-          echo "SYMROOT=\${SOURCE_ROOT}/../build/ios" >> flutter_export_environment
-          echo "FLUTTER_BUILD_NAME=1.0.0" >> flutter_export_environment
-          echo "FLUTTER_BUILD_NUMBER=1" >> flutter_export_environment
-          echo "DART_OBFUSCATION=false" >> flutter_export_environment
-          echo "TRACK_WIDGET_CREATION=true" >> flutter_export_environment
-          echo "TREE_SHAKE_ICONS=false" >> flutter_export_environment
-          echo "PACKAGE_CONFIG=.dart_tool/package_config.json" >> flutter_export_environment
+          echo "export FLUTTER_ROOT=$FLUTTER_ROOT" > flutter_export_environment
+          echo "export FLUTTER_APPLICATION_PATH=$CM_BUILD_DIR" >> flutter_export_environment
+          echo "export COCOAPODS_PARALLEL_CODE_SIGN=true" >> flutter_export_environment
+          echo "export FLUTTER_TARGET=lib/main.dart" >> flutter_export_environment
+          echo "export FLUTTER_BUILD_DIR=build" >> flutter_export_environment
+          echo "export SYMROOT=\${SOURCE_ROOT}/../build/ios" >> flutter_export_environment
+          echo "export FLUTTER_BUILD_NAME=1.0.0" >> flutter_export_environment
+          echo "export FLUTTER_BUILD_NUMBER=1" >> flutter_export_environment
+          echo "export DART_OBFUSCATION=false" >> flutter_export_environment
+          echo "export TRACK_WIDGET_CREATION=true" >> flutter_export_environment
+          echo "export TREE_SHAKE_ICONS=false" >> flutter_export_environment
+          echo "export PACKAGE_CONFIG=.dart_tool/package_config.json" >> flutter_export_environment
 
       - name: Build iOS app
         script: |
-          cd $CM_BUILD_DIR
           flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/iphoneos/*.app
       - build/ios/ipa/*.ipa
-      - build/ios/Build/**/*.dSYM
 
     publishing:
       email:
